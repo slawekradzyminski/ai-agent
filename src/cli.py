@@ -34,6 +34,12 @@ class AgentCLI:
             logger.info(f"Processing search request: {query}")
             results = self.agent.search(query)
             self._display_search_results(query, results)
+        # Check if it's a http request command
+        elif message.lower().startswith('http:'):
+            url = message[7:].strip()
+            logger.info(f"Processing http request: {url}")
+            result = self.agent.http_request(url)
+            self._display_http_result(result)
         else:
             # Process as normal message
             response = await self.agent.process_message(
@@ -49,6 +55,7 @@ class AgentCLI:
         print("------------------------")
         print("Type 'exit' or 'quit' to end the session")
         print("Type 'search: your query' to perform a web search")
+        print("Type 'http: url' to make an HTTP request")
         print("Type 'help' for more information")
         print("------------------------\n")
 
@@ -78,6 +85,14 @@ class AgentCLI:
                     self._display_search_results(query, results)
                     continue
 
+                # Handle http commands
+                if user_input.lower().startswith('http:'):
+                    url = user_input[5:].strip()
+                    logger.info(f"Processing http request: {url}")
+                    result = self.agent.http_request(url)
+                    self._display_http_result(result)
+                    continue
+
                 # Process normal message
                 logger.info("Processing chat message")
                 response = await self.agent.process_message(
@@ -86,12 +101,8 @@ class AgentCLI:
                 )
                 print(f"\nAssistant: {response}")
 
-            except KeyboardInterrupt:
-                logger.info("Received keyboard interrupt")
-                print("\n\nExiting...")
-                break
             except Exception as e:
-                logger.error(f"Error in interactive mode: {str(e)}", exc_info=True)
+                logger.error(f"Error processing input: {str(e)}", exc_info=True)
                 print(f"\nError: {str(e)}")
 
     def _show_help(self):
@@ -100,12 +111,14 @@ class AgentCLI:
         print("\nAvailable Commands:")
         print("------------------")
         print("search: <query>  - Perform a web search")
+        print("http: <url>      - Make an HTTP request")
         print("help            - Show this help message")
         print("exit/quit       - End the session")
         print("\nGeneral Usage:")
         print("-------------")
         print("- Type any message to chat with the AI")
         print("- Use 'search:' prefix for web searches")
+        print("- Use 'http:' prefix to make HTTP requests")
         print("- The agent will remember your conversation")
 
     def _display_search_results(self, query: str, results: List[Dict[str, Any]]):
@@ -130,6 +143,82 @@ class AgentCLI:
             except Exception as e:
                 logger.error(f"Error displaying result {i}: {str(e)}")
                 continue
+
+    def _display_http_result(self, result: Dict[str, Any]):
+        """Display HTTP request result in a formatted manner."""
+        logger.info(f"Displaying HTTP request result for URL: {result.get('url')}")
+        
+        print("\nHTTP Response:")
+        print("---------------")
+        
+        if 'error' in result:
+            print(f"Error: {result['error']}")
+            return
+        
+        if result.get('url'):
+            print(f"\nURL: {result['url']}")
+        
+        if result.get('content_type'):
+            print(f"\nContent Type: {result['content_type']}")
+        
+        print(f"\nURL: {result.get('url')}")
+        print(f"Content Type: {result.get('content_type', 'unknown')}")
+        
+        if result.get('content'):
+            print("\nContent:")
+            print("-" * 50)
+            if result['content_type'] == 'json':
+                import json
+                print(json.dumps(result['content'], indent=2))
+            else:
+                print(result['content'])
+
+    def _process_command(self, command: str) -> None:
+        """Process a command and display the result."""
+        if command.startswith('search:'):
+            query = command[7:].strip()
+            if query:
+                self._display_search_results(self.agent.search(query))
+            else:
+                print("Please provide a search query")
+        
+        elif command.startswith('http:'):
+            url = command[5:].strip()
+            if url:
+                self._display_http_result(self.agent.http_request(url))
+            else:
+                print("Please provide a URL")
+        
+        elif command == 'help':
+            self._display_help()
+        
+        elif command == 'exit':
+            self.running = False
+        
+        else:
+            self._process_chat_message(command)
+
+    def _display_help(self) -> None:
+        """Display help information."""
+        print("\nAvailable commands:")
+        print("  search: <query>  - Search the web")
+        print("  http: <url>      - Make an HTTP request to a URL")
+        print("  help            - Display this help message")
+        print("  exit            - Exit the program")
+        print("  <message>       - Chat with the agent\n")
+
+    def _display_http_result(self, result: Dict[str, Any]) -> None:
+        """Display the result of an HTTP request."""
+        if 'error' in result:
+            print(f"\nError: {result['error']}")
+            return
+
+        print("\nHTTP Response:")
+        if isinstance(result, dict):
+            for key, value in result.items():
+                print(f"{key}: {value}")
+        else:
+            print(result)
 
 
 def main():

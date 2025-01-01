@@ -1,25 +1,20 @@
 # AI Agent
 
-An autonomous agent built with LangChain framework, capable of performing web searches and interacting through a command-line interface.
+An AI agent with web search and HTTP request capabilities, built with LangChain and OpenAI.
 
 ## Features
 
-- 🔍 DuckDuckGo search integration
-- 🤖 OpenAI GPT integration
-- 💻 Interactive command-line interface
-- ⚡ Async support
-- 🔐 Secure environment configuration
-
-## Prerequisites
-
-- Python 3.9 or higher
-- OpenAI API key
+- Chat interaction using OpenAI's language models
+- Web search using DuckDuckGo
+- HTTP requests to fetch web content
+- Interactive command-line interface
+- Conversation history tracking
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/slawekradzyminski/ai-agent.git
+git clone https://github.com/yourusername/ai-agent.git
 cd ai-agent
 ```
 
@@ -34,12 +29,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file based on `.env.example`:
-```bash
-cp .env.example .env
-```
-
-5. Add your OpenAI API key to `.env`:
+4. Create a `.env` file with your OpenAI API key:
 ```
 OPENAI_API_KEY=your_api_key_here
 ```
@@ -48,41 +38,40 @@ OPENAI_API_KEY=your_api_key_here
 
 ### Interactive Mode
 
-Start the interactive CLI mode:
+Start the interactive CLI:
 ```bash
-python -m src.cli
+python src/cli.py
 ```
-
-In interactive mode, you can:
-- Chat with the AI agent
-- Perform web searches
-- Get help with commands
 
 Available commands:
 - `search: query` - Search the web using DuckDuckGo
-- `help` - Show available commands
-- `exit` or `quit` - End the session
-
-Example search:
-```bash
-You: search: World Cup 2024
-```
+- `http: url` - Make an HTTP request to a URL
+- `help` - Show help message
+- `exit` - Exit the program
+- Any other text - Chat with the AI agent
 
 ### Single Message Mode
 
-Send a single message or search query:
+Send a single message:
 ```bash
-python -m src.cli -m "your message here"
-python -m src.cli -m "search: your search query"
+python src/cli.py -m "your message here"
 ```
 
-Examples:
-```bash
-# Chat with the agent
-python -m src.cli -m "What is artificial intelligence?"
+### Examples
 
-# Perform a search
-python -m src.cli -m "search: latest AI developments"
+1. Web Search:
+```
+You: search: Python programming best practices
+```
+
+2. HTTP Request:
+```
+You: http: https://api.example.com/data
+```
+
+3. Chat:
+```
+You: What is the capital of France?
 ```
 
 ## Testing
@@ -92,43 +81,27 @@ Run the test suite:
 python -m pytest tests/
 ```
 
-Run specific test files:
-```bash
-python -m pytest tests/test_cli.py
-python -m pytest tests/test_tools.py
-```
-
-### End-to-End Tests
-
-Run the standalone e2e test to verify search functionality:
+Run end-to-end tests:
 ```bash
 python e2e.py
 ```
-
-This will:
-- Perform a real search for awesome-testing.com
-- Verify that the blog is found in the results
-- Display detailed test results with emojis
-- Exit with code 0 on success, 1 on failure
 
 ## Project Structure
 
 - `src/` - Source code
   - `agent/` - Agent implementation
-  - `tools/` - Tool integrations (e.g., search)
+  - `tools/` - Tool implementations (search, HTTP)
   - `config/` - Configuration management
-  - `cli.py` - Command-line interface
-- `tests/` - Test files
-- `e2e.py` - Standalone end-to-end tests
-- `.env.example` - Environment variables template
-- `requirements.txt` - Project dependencies
+- `tests/` - Test suite
+- `e2e.py` - End-to-end tests
 
 ## Contributing
 
-1. Follow PEP 8 style guide
-2. Add tests for new features
-3. Update documentation
-4. Update CHANGELOG.md with changes
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
 ## License
 

@@ -12,6 +12,7 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
 - ✅ Search functionality verified with real-world queries
 - ✅ Project documentation completed with usage guide
 - ✅ End-to-end tests implemented for core functionality
+- ✅ HTTP request functionality implemented and tested
 - 🚧 Additional tool integrations (Planned)
 
 ## Core Objectives
@@ -27,6 +28,7 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
 - LangChain framework (latest version)
 - OpenAI GPT integration
 - DuckDuckGo search API
+- HTTP request capabilities
 - Async support with aiohttp
 - Environment management with python-dotenv
 - Testing with pytest and standalone e2e tests
@@ -41,13 +43,14 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
 - [x] Test suite for core functionality
 - [x] Command-line interface with interactive mode
 - [x] Search command integration in CLI
+- [x] HTTP request functionality with response handling
 - [x] Verified search functionality with specific test cases
 - [x] Comprehensive documentation with usage examples
 - [x] End-to-end tests for core functionality
 
 ## Planned Features
 - [ ] Additional tool integrations:
-  - [ ] Web browsing capabilities
+  - [x] HTTP request capabilities
   - [ ] File operations
   - [ ] Data analysis tools
 - [ ] Enhanced conversation memory

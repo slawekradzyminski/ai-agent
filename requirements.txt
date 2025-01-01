@@ -14,4 +14,4 @@ aiohttp
 tenacity
 pytest
 pytest-asyncio
-pytest-mock 
+pytest-mock
