@@ -1,86 +1,126 @@
-"""Browser tool for web scraping using Selenium."""
+"""Browser tool for fetching web page content."""
 import logging
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.common.exceptions import WebDriverException
+from bs4 import BeautifulSoup
+from src.config.logging_config import request_logger
 
 logger = logging.getLogger(__name__)
 
 class BrowserTool:
-    """Tool for browser automation using Selenium."""
+    """Tool for fetching web page content using Selenium."""
 
     def __init__(self):
-        """Initialize the BrowserTool with Chrome WebDriver."""
+        """Initialize the browser tool."""
         logger.info("Initializing BrowserTool")
-        self.driver = None
 
-    def _setup_driver(self):
-        """Set up Chrome WebDriver with appropriate options."""
-        if self.driver is None:
-            options = Options()
-            options.add_argument('--headless')  # Run in headless mode
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-dev-shm-usage')
-            options.add_argument('--disable-gpu')
-            options.add_argument('--window-size=1920,1080')
-            
-            try:
-                self.driver = webdriver.Chrome(options=options)
-                logger.info("Chrome WebDriver initialized successfully")
-            except WebDriverException as e:
-                logger.error(f"Failed to initialize Chrome WebDriver: {str(e)}")
-                raise
-
-    def get_page_content(self, url: str, wait_time: int = 10) -> str:
+    def _parse_html_content(self, html: str) -> str:
         """
-        Open a URL in Chrome and return the page content.
-
+        Parse HTML content and extract meaningful text.
+        
         Args:
-            url: The URL to open
-            wait_time: Maximum time to wait for page load in seconds
-
+            html: Raw HTML content to parse.
+            
         Returns:
-            The page content as a string
+            str: Cleaned and formatted text content.
         """
+        # Parse HTML with BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style", "meta", "link", "noscript"]):
+            script.decompose()
+        
+        # Get text content
+        text = soup.get_text(separator='\n', strip=True)
+        
+        # Clean up text: remove multiple newlines and spaces
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        return '\n'.join(lines)
+
+    def get_page_content(self, url: str) -> str:
+        """
+        Fetch content from a URL using Chrome WebDriver.
+        
+        Args:
+            url: The URL to fetch content from.
+            
+        Returns:
+            str: The parsed page content with only meaningful text.
+        """
+        logger.info(f"Fetching content from URL: {url}")
+        
+        # Set up Chrome options
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        
         try:
-            logger.info(f"Fetching content from URL: {url}")
-            self._setup_driver()
+            # Initialize the driver
+            driver = webdriver.Chrome(options=chrome_options)
+            logger.info("Chrome WebDriver initialized successfully")
             
-            # Load the page
-            self.driver.get(url)
+            # Log the page visit
+            request_logger.info(
+                "Browser Page Visit",
+                extra={
+                    'request': f"URL: {url}",
+                    'response': "Starting page load..."
+                }
+            )
             
-            # Wait for page load
-            WebDriverWait(self.driver, wait_time).until(
+            # Get the page
+            driver.get(url)
+            
+            # Wait for the page to load
+            WebDriverWait(driver, 10).until(
                 lambda d: d.execute_script('return document.readyState') == 'complete'
             )
             
-            # Wait for any dynamic content to load
-            try:
-                # Wait for body to contain text
-                WebDriverWait(self.driver, wait_time).until(
-                    lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 0
-                )
-                
-                # Additional wait for any JavaScript frameworks to initialize
-                self.driver.execute_script("return new Promise(resolve => setTimeout(resolve, 1000))")
-            except TimeoutException:
-                logger.warning("Timeout waiting for dynamic content")
+            # Get the page source
+            page_source = driver.page_source
             
-            # Get page content
-            content = self.driver.page_source
-            text_content = self.driver.find_element(By.TAG_NAME, "body").text
+            # Parse and clean the content
+            text = self._parse_html_content(page_source)
+            
+            # Log both raw HTML and cleaned text
+            request_logger.info(
+                "Browser Content Retrieved",
+                extra={
+                    'request': f"URL: {url}",
+                    'response': (
+                        f"Raw HTML length: {len(page_source)}\n"
+                        f"Cleaned text length: {len(text)}\n"
+                        f"Returned cleaned text:\n{text}"
+                    )
+                }
+            )
             
             logger.info(f"Successfully retrieved content from {url}")
-            return text_content
-
+            
+            return text
+            
         except WebDriverException as e:
-            logger.error(f"Error accessing {url}: {str(e)}")
-            raise
+            error_msg = f"Error fetching content from {url}: {str(e)}"
+            logger.error(error_msg)
+            
+            # Log the error
+            request_logger.error(
+                "Browser Page Load Failed",
+                extra={
+                    'request': f"URL: {url}",
+                    'response': f"Error: {str(e)}"
+                }
+            )
+            
+            return ""
+            
         finally:
-            if self.driver:
-                self.driver.quit()
-                self.driver = None 
+            try:
+                driver.quit()
+            except:
+                pass 

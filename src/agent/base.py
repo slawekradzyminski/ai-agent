@@ -1,4 +1,6 @@
 """Base agent implementation."""
+import json
+import uuid
 from typing import List, Optional, Dict, Any
 from langchain_openai import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
@@ -7,6 +9,7 @@ from src.tools.search import SearchTool
 from src.tools.httprequest import HTTPRequestTool
 from src.tools.browser import BrowserTool
 from src.memory.memory import Memory, ToolMemory
+from src.config.logging_config import request_logger
 
 class Agent:
     """Base agent class with DuckDuckGo search and HTTP request capabilities."""
@@ -102,6 +105,9 @@ class Agent:
         Returns:
             Agent's response as a string
         """
+        # Generate unique request ID
+        request_id = str(uuid.uuid4())
+        
         messages = []
         
         if system_prompt:
@@ -130,8 +136,37 @@ class Agent:
         # Add user message with context
         messages.append(HumanMessage(content=context_message))
 
+        # Log the OpenAI API request once with request ID
+        request_data = {
+            'request_id': request_id,
+            'model': AGENT_MODEL,
+            'messages': [
+                {'role': 'system' if isinstance(msg, SystemMessage) else 'user',
+                 'content': msg.content}
+                for msg in messages
+            ],
+            'temperature': AGENT_TEMPERATURE
+        }
+        
+        request_logger.info(
+            "OpenAI API Request",
+            extra={
+                'request': json.dumps(request_data, indent=2),
+                'response': 'Pending...'
+            }
+        )
+
         # Get response from LLM
         response = self.llm.invoke(messages)
+        
+        # Log the OpenAI API response once with request ID
+        request_logger.info(
+            "OpenAI API Response",
+            extra={
+                'request': f"Request ID: {request_id}",
+                'response': response.content
+            }
+        )
         
         # Store assistant response
         self.memory.add_conversation_memory(

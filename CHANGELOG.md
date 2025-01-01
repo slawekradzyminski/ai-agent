@@ -78,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `test_search_handler.py`
   - `test_http_handler.py`
   - `test_browser_handler.py`
+- Improved browser tool to return clean, readable text content instead of raw HTML
+- Added BeautifulSoup4 for better HTML parsing and content extraction
+- Extracted HTML parsing logic into a separate method for better maintainability
+- Enhanced logging to include both raw HTML and cleaned text content
+- Simplified test suite by focusing on core functionality tests
 
 ### Deprecated
 - None

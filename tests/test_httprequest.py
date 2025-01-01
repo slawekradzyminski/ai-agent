@@ -6,24 +6,24 @@ from src.tools.httprequest import HTTPRequestTool
 
 @pytest.fixture
 def http_tool():
-    """Create an instance of HTTPRequestTool for testing."""
+    """Create an HTTP request tool instance for testing."""
     return HTTPRequestTool()
 
 @responses.activate
-def test_request_json(http_tool):
-    """Test making a request that returns JSON."""
-    test_url = "https://api.example.com/data"
-    test_data = {"key": "value"}
+def test_request_success(http_tool):
+    """Test successful HTTP request."""
+    test_url = "https://test.example.com"
+    test_response = {"status": "ok", "data": "test"}
     
     responses.add(
         responses.GET,
         test_url,
-        json=test_data,
+        json=test_response,
         status=200
     )
     
     result = http_tool.request(test_url)
-    assert result == test_data
+    assert result == test_response
 
 @responses.activate
 def test_request_error(http_tool):
@@ -33,8 +33,9 @@ def test_request_error(http_tool):
     responses.add(
         responses.GET,
         test_url,
-        status=404
+        body=RequestException("Connection failed")
     )
     
-    with pytest.raises(RequestException):
-        http_tool.request(test_url) 
+    result = http_tool.request(test_url)
+    assert "error" in result
+    assert "Connection failed" in result["error"] 

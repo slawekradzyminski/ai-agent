@@ -1,0 +1,90 @@
+
+2025-01-01 19:56:19,351 - external_requests - INFO
+----------------------------------------
+REQUEST: URL: https://www.awesome-testing.com/tips/deep-technical-understanding
+RESPONSE: Starting page load...
+----------------------------------------
+
+
+2025-01-01 19:56:20,780 - external_requests - INFO
+----------------------------------------
+REQUEST: URL: https://www.awesome-testing.com/tips/deep-technical-understanding
+RESPONSE: Raw HTML length: 14981
+Cleaned text length: 2566
+Returned cleaned text:
+Awesome Testing
+Blog
+Tips for Seniors
+Book Recommendations
+Public Speaking
+Contact
+Follow me on
+Tips List
+Antifragile
+Deep Technical Understanding
+Elevate Your Perspective
+Feynman Technique
+Inderdisciplinary
+Keep Coding
+On Reading Regularly
+Producer vs Consumer
+Staff Engineering Books
+T (Pi) model
+Visibility
+Writing
+Deep Technical Understanding
+In our testing bubble, much is said about a deep business understanding of the tested application/functionality. We have
+coined many terms, more or less useful, which we can ask about in an interview (Three Amigos in Agile, BDD). Here, I'm
+deliberately omitting the effectiveness of these practices. Every Senior+ should organize this in a way that works for
+them. It's unquestionable that building such understanding has been, is, and will be important. Incidentally, this is
+still an area where people have a huge advantage over generative AI.
+For some reason, another aspect that I consider equally important hasn't yet penetrated our bubble - a deep TECHNICAL
+understanding of the tested application. What communicates with what? Where are the boundaries of our system? Where do
+we integrate with other systems maintained by teams in our company? Where do we have integration with systems maintained
+by other companies (3rd-party dependency)? How to test integration within our system, between systems in the company,
+and between our system and external service providers? What protocol is used for communication? What are WebSockets? How
+do frontend and backend know we are logged in? How to circumvent this? Can we move tests to a lower level?
+Building a deep technical understanding is very important in the era of microservices and ubiquitous asynchronous
+communication. How to test an event-based architecture? Why do architects decide to introduce queues/topics instead of
+relying on a synchronous HTTP interface? How does this affect our functional and non-functional tests?
+Building a deep technical understanding is an excellent way to maximize the benefits we can derive from our work. By
+organizing this in our heads, we not only become better testers of the current system but also build transferable
+knowledge that becomes our personal capital. We build an advantage over the competition in the job market.
+Books that are great for connecting the dots:
+Understanding Distributed Systems
+Fundamentals of Software Architecture
+Software Architecture - the Hard Parts
+Thinking in Systems
+System Design Interview - Volume 1
+System Design Interview - Volume 2
+Copyright © Sławomir Radzymiński Consulting 2025
+----------------------------------------
+
+
+2025-01-01 19:56:53,831 - external_requests - INFO
+----------------------------------------
+REQUEST: {
+  "request_id": "1921593b-e71d-4c96-aa99-6f622580881d",
+  "model": "gpt-3.5-turbo",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful AI assistant. Be concise and informative."
+    },
+    {
+      "role": "user",
+      "content": "Previous conversation and relevant information:\n\nuser: What does the author think about deep-technical-understanding?\n\n[Tool Output - browser]\nInput: {'url': 'https://www.awesome-testing.com/tips/deep-technical-understanding'}\nOutput: {'content_length': 2566}\n\nCurrent message: What does the author think about deep-technical-understanding?"
+    }
+  ],
+  "temperature": 0.7
+}
+RESPONSE: Pending...
+----------------------------------------
+
+
+2025-01-01 19:56:54,795 - external_requests - INFO
+----------------------------------------
+REQUEST: Request ID: 1921593b-e71d-4c96-aa99-6f622580881d
+RESPONSE: I recommend visiting the provided URL to access the author's thoughts on deep technical understanding. The content length of the article is 2566 words, indicating a detailed discussion on the topic.
+----------------------------------------
+

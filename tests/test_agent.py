@@ -1,6 +1,6 @@
 """Tests for the agent module."""
 import pytest
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch, call, ANY
 from src.agent.base import Agent
 
 @pytest.fixture
