@@ -33,11 +33,9 @@ class HTTPRequestTool:
             response = self.session.request(method, url, headers=headers)
             response.raise_for_status()
 
-            # Try to parse as JSON first
             try:
                 return response.json()
             except ValueError:
-                # If not JSON, return text content
                 return {
                     "content": response.text,
                     "status_code": response.status_code,
