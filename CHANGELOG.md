@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed browser functionality to HTTP request for better clarity
 - Updated CLI interface to use 'http:' command
 - Improved error handling and response formatting for HTTP requests
+- Improved HTTP request tool with better HTML parsing
+- Enhanced anti-bot handling for web scraping
+- Added support for extracting content from e-commerce sites
 
 ### Deprecated
 - None
@@ -62,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed logging level configuration in settings
 - Fixed HTTP request error handling and response formatting
 - Fixed e2e test to properly verify HTTP responses
+- Fixed HTML content extraction from complex web pages
+- Improved meta tag parsing and content selection
 
 ### Security
 - Added .env to .gitignore to prevent exposure of API keys 
