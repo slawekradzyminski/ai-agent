@@ -7,8 +7,10 @@ An AI agent with web search and HTTP request capabilities, built with LangChain 
 - Chat interaction using OpenAI's language models
 - Web search using DuckDuckGo
 - HTTP requests to fetch web content
+- Browser-based web scraping with Chrome
 - Interactive command-line interface
 - Conversation history tracking
+- Modular command handling system
 
 ## Installation
 
@@ -40,12 +42,13 @@ OPENAI_API_KEY=your_api_key_here
 
 Start the interactive CLI:
 ```bash
-python src/cli.py
+python -m src.cli.main
 ```
 
 Available commands:
 - `search: query` - Search the web using DuckDuckGo
 - `http: url` - Make an HTTP request to a URL
+- `browser: url` - Get page content using Chrome
 - `help` - Show help message
 - `exit` - Exit the program
 - Any other text - Chat with the AI agent
@@ -54,7 +57,7 @@ Available commands:
 
 Send a single message:
 ```bash
-python src/cli.py -m "your message here"
+python src/cli/main.py -m "your message here"
 ```
 
 ### Examples
@@ -69,7 +72,12 @@ You: search: Python programming best practices
 You: http: https://api.example.com/data
 ```
 
-3. Chat:
+3. Browser Content:
+```
+You: browser: https://example.com
+```
+
+4. Chat:
 ```
 You: What is the capital of France?
 ```
@@ -90,9 +98,17 @@ python e2e.py
 
 - `src/` - Source code
   - `agent/` - Agent implementation
-  - `tools/` - Tool implementations (search, HTTP)
+  - `cli/` - Command-line interface
+    - `handlers/` - Command handlers
+      - `base.py` - Base handler class
+      - `search.py` - Search command handler
+      - `http.py` - HTTP command handler
+      - `browser.py` - Browser command handler
+    - `main.py` - Main CLI entry point
+  - `tools/` - Tool implementations (search, HTTP, browser)
   - `config/` - Configuration management
 - `tests/` - Test suite
+  - `cli/` - CLI-specific tests
 - `e2e.py` - End-to-end tests
 
 ## Contributing

@@ -40,6 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added tool output tracking and association with messages
 - Created memory module for structured storage of conversation and tool outputs
 - Added support for retrieving relevant tool outputs for context
+- Added modular command handling system with base handler class
+- Created separate handlers for search, HTTP, and browser commands
+- Added comprehensive tests for each command handler
+- Core functionality tests in `e2e.py` that verify:
+  - HTTP requests using JSONPlaceholder API
+  - Web search functionality
+  - Browser content fetching
+  - Chat interaction
+- Better error handling and logging in tests
+- Immediate test failure on any component failure
 
 ### Changed
 - Updated all dependencies to their latest stable versions
@@ -57,6 +67,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced browser tool to handle dynamic content loading
 - Updated CLI help messages to include browser command
 - Improved test coverage for browser functionality
+- Refactored CLI code into modular structure with separate handlers
+- Moved CLI implementation to dedicated package with proper organization
+- Enhanced CLI tests with better async support and mocking
+- Updated README with new project structure and features
+- Simplified test suite by merging smoke tests and e2e tests into a single `e2e.py` file
+- Removed website-specific tests in favor of more reliable core functionality tests
+- Removed obsolete `cli.py` in favor of the modular implementation in `src/cli/`
+- Split handler tests into separate files for better maintainability:
+  - `test_search_handler.py`
+  - `test_http_handler.py`
+  - `test_browser_handler.py`
 
 ### Deprecated
 - None
@@ -72,6 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed logging level configuration in settings
 - Fixed HTTP request error handling and response formatting
 - Fixed e2e test to properly verify HTTP responses
+- Fixed async handling in CLI command processing
+- Fixed test imports after CLI restructuring
 
 ### Security
 - Added .env to .gitignore to prevent exposure of API keys 

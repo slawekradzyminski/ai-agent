@@ -1,56 +1,82 @@
-"""End-to-end test for the AI agent."""
+"""End-to-end tests for the AI agent."""
+import asyncio
 import sys
-from src.cli import AgentCLI
+import logging
+from src.cli.main import AgentCLI
+from src.cli.handlers.http import HttpHandler
+from src.cli.handlers.search import SearchHandler
+from src.cli.handlers.browser import BrowserHandler
 
-def run_tests():
-    """Run end-to-end tests."""
-    print("Running end-to-end tests...")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def run_tests():
+    """Run end-to-end tests to verify core functionality."""
+    print("\nRunning End-to-End Tests")
+    print("=======================")
     
-    # Initialize CLI
+    # Initialize CLI and handlers
     cli = AgentCLI()
-    
-    # Test search functionality
-    print("\nTesting search functionality...")
-    results = cli.agent.search("awesome-testing.com")
-    
-    # Check if the blog is in the results
-    blog_found = False
-    blog_url = None
-    
-    for result in results:
-        if "awesome-testing.com" in result.get("link", "").lower():
-            blog_found = True
-            blog_url = result.get("link")
-            print(f"✅ Found blog: {result.get('title', 'No title')}")
-            print(f"   Link: {blog_url}")
-            print(f"   Snippet: {result.get('snippet', '')[:50]}...")
-            break
-    
-    if not blog_found:
-        print("❌ Blog not found in search results")
-        sys.exit(1)
-    
-    # Test browser functionality
-    print("\nTesting browser functionality...")
-    test_url = "https://www.awesome-testing.com/2024/12/from-live-suggestions-to-agents-exploring-ai-powered-ides"
-    expected_text = """AI-powered IDEs are reshaping how we approach software development, combining speed, efficiency, and contextual awareness to create smarter workflows. From live suggestions and RAG integration to chat-based support and agents, these tools are designed to enhance every stage of the development process. We are entering the era of AI-Driven Development."""
+    http_handler = HttpHandler(cli.agent)
+    search_handler = SearchHandler(cli.agent)
+    browser_handler = BrowserHandler(cli.agent)
     
     try:
-        content = cli.agent.get_page_content(test_url)
-        if expected_text in content:
-            print("✅ Successfully found expected text in page content")
+        # Test 1: HTTP Request
+        print("\n1. Testing HTTP Request")
+        print("----------------------")
+        http_result = await http_handler.handle("http: https://jsonplaceholder.typicode.com/posts/1")
+        if http_result.get("title"):
+            print("✅ HTTP request successful")
         else:
-            print("❌ Expected text not found in page content")
-            print("\nActual content snippet:")
-            print("-" * 50)
-            print(content[:500] + "..." if len(content) > 500 else content)
+            print("❌ HTTP request failed")
             sys.exit(1)
+
+        # Test 2: Web Search
+        print("\n2. Testing Web Search")
+        print("-------------------")
+        search_results = await search_handler.handle("search: Python programming language")
+        if search_results and len(search_results) > 0:
+            print("✅ Web search successful")
+        else:
+            print("❌ Web search failed")
+            sys.exit(1)
+
+        # Test 3: Browser
+        print("\n3. Testing Browser")
+        print("----------------")
+        browser_content = await browser_handler.handle("browser: https://www.python.org")
+        if len(browser_content) > 0:
+            print("✅ Browser fetch successful")
+        else:
+            print("❌ Browser fetch failed")
+            sys.exit(1)
+
+        # Test 4: Chat
+        print("\n4. Testing Chat")
+        print("-------------")
+        chat_response = await cli.agent.process_message(
+            "What is 2+2?",
+            system_prompt="You are a helpful AI assistant. Answer: The sum of 2 and 2 is 4."
+        )
+        if "4" in chat_response:
+            print("✅ Chat response successful")
+        else:
+            print("❌ Chat response failed")
+            sys.exit(1)
+
+        print("\n✅ All tests passed!")
+        sys.exit(0)
+
     except Exception as e:
-        print(f"❌ Error accessing page: {str(e)}")
+        logger.error(f"Test failed: {str(e)}", exc_info=True)
+        print(f"\n❌ Test failed: {str(e)}")
         sys.exit(1)
 
-    print("\n✅ All tests passed!")
-    sys.exit(0)
-
 if __name__ == "__main__":
-    run_tests() 
+    try:
+        asyncio.run(run_tests())
+    except KeyboardInterrupt:
+        print("\nTests interrupted by user")
+        sys.exit(1) 

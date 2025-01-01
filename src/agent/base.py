@@ -24,7 +24,7 @@ class Agent:
         self.memory = Memory()
         self._last_tool_memory: Optional[ToolMemory] = None
 
-    def search(self, query: str) -> List[dict]:
+    async def search(self, query: str) -> List[dict]:
         """
         Perform a web search using the DuckDuckGo tool.
 
@@ -45,7 +45,7 @@ class Agent:
         
         return results
 
-    def http_request(self, url: str) -> Dict[str, Any]:
+    async def http_request(self, url: str) -> Dict[str, Any]:
         """
         Make an HTTP request to a URL.
 
@@ -66,15 +66,15 @@ class Agent:
         
         return result
 
-    def get_page_content(self, url: str) -> str:
+    async def get_page_content(self, url: str) -> str:
         """
-        Get page content using Selenium Chrome browser.
+        Get content from a webpage using Chrome.
 
         Args:
-            url: The URL to open
+            url: The URL to fetch content from
 
         Returns:
-            The page content as a string
+            String containing the page content
         """
         content = self.browser_tool.get_page_content(url)
         
@@ -82,7 +82,7 @@ class Agent:
         self._last_tool_memory = self.memory.add_tool_memory(
             tool_name="browser",
             input_data={"url": url},
-            output_data=content[:1000]  # Store truncated content to save memory
+            output_data={"content_length": len(content)}
         )
         
         return content
@@ -129,7 +129,7 @@ class Agent:
         
         # Add user message with context
         messages.append(HumanMessage(content=context_message))
-        
+
         # Get response from LLM
         response = self.llm.invoke(messages)
         
