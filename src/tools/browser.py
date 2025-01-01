@@ -30,16 +30,66 @@ class BrowserTool:
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Remove script and style elements
-        for script in soup(["script", "style", "meta", "link", "noscript"]):
-            script.decompose()
+        # Remove script, style, and other non-content elements
+        for element in soup(["script", "style", "meta", "link", "noscript", "header", "footer", "nav"]):
+            element.decompose()
         
-        # Get text content
-        text = soup.get_text(separator='\n', strip=True)
+        # Try to find the main content area using common patterns
+        main_content = None
         
-        # Clean up text: remove multiple newlines and spaces
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        return '\n'.join(lines)
+        # Look for article or main content by common class/id patterns
+        content_indicators = [
+            # Classes
+            {"class_": ["article", "post", "content", "main-content", "entry-content", "post-content"]},
+            # IDs
+            {"id": ["article", "post", "content", "main-content", "entry-content", "post-content"]},
+            # Tags
+            {"name": ["article", "main"]}
+        ]
+        
+        for indicator in content_indicators:
+            found = soup.find(**indicator)
+            if found:
+                main_content = found
+                break
+        
+        # If we found a main content area, use that
+        if main_content:
+            # Remove any remaining navigation/menu elements within the main content
+            for nav in main_content.find_all(class_=lambda x: x and any(term in str(x).lower() for term in ["menu", "nav", "sidebar", "footer"])):
+                nav.decompose()
+            
+            # Get text from main content
+            text = main_content.get_text(separator='\n', strip=True)
+        else:
+            # Fallback: use the whole body but try to clean it up
+            body = soup.find('body')
+            if body:
+                # Remove elements likely to be navigation/menus/footers
+                for element in body.find_all(class_=lambda x: x and any(term in str(x).lower() for term in ["menu", "nav", "sidebar", "footer", "header"])):
+                    element.decompose()
+                text = body.get_text(separator='\n', strip=True)
+            else:
+                # Last resort: just get all text
+                text = soup.get_text(separator='\n', strip=True)
+        
+        # Clean up text
+        lines = []
+        for line in text.splitlines():
+            line = line.strip()
+            # Skip empty lines and very short lines that are likely menu items
+            if line and len(line) > 3:
+                # Skip lines that look like navigation (short text with special characters)
+                if not (len(line) < 20 and any(char in line for char in ['»', '›', '|', '•', '>', '<'])):
+                    lines.append(line)
+        
+        # Join lines, but add extra newline between paragraphs
+        text = '\n'.join(lines)
+        
+        # Remove redundant whitespace while preserving paragraph breaks
+        text = '\n'.join(line for line in text.splitlines() if line.strip())
+        
+        return text
 
     def get_page_content(self, url: str) -> str:
         """

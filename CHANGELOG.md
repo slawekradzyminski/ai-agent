@@ -83,12 +83,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extracted HTML parsing logic into a separate method for better maintainability
 - Enhanced logging to include both raw HTML and cleaned text content
 - Simplified test suite by focusing on core functionality tests
+- Enhanced HTML content extraction with smart main content detection
+- Improved content cleaning by removing navigation, menus, and non-essential elements
+- Added automatic log cleanup in tests
+- Updated .gitignore to properly exclude log files
 
 ### Deprecated
 - None
 
 ### Removed
-- None
+- Removed log files from version control
+- Removed redundant HTML elements from browser tool output
 
 ### Fixed
 - Fixed package version conflicts
@@ -100,6 +105,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed e2e test to properly verify HTTP responses
 - Fixed async handling in CLI command processing
 - Fixed test imports after CLI restructuring
-
-### Security
-- Added .env to .gitignore to prevent exposure of API keys 
+- Fixed content extraction to focus on main article content
+- Fixed test cleanup to properly handle log files 

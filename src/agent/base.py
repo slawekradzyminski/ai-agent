@@ -25,7 +25,7 @@ class Agent:
         self.http_tool = HTTPRequestTool()
         self.browser_tool = BrowserTool()
         self.memory = Memory()
-        self._last_tool_memory: Optional[ToolMemory] = None
+        self._recent_tool_memories: List[ToolMemory] = []
 
     async def search(self, query: str) -> List[dict]:
         """
@@ -40,11 +40,12 @@ class Agent:
         results = self.search_tool.search_web(query)
         
         # Store in memory
-        self._last_tool_memory = self.memory.add_tool_memory(
+        tool_memory = self.memory.add_tool_memory(
             tool_name="search",
             input_data={"query": query},
             output_data=results
         )
+        self._recent_tool_memories.append(tool_memory)
         
         return results
 
@@ -61,11 +62,12 @@ class Agent:
         result = self.http_tool.request(url)
         
         # Store in memory
-        self._last_tool_memory = self.memory.add_tool_memory(
+        tool_memory = self.memory.add_tool_memory(
             tool_name="http_request",
             input_data={"url": url},
             output_data=result
         )
+        self._recent_tool_memories.append(tool_memory)
         
         return result
 
@@ -82,11 +84,12 @@ class Agent:
         content = self.browser_tool.get_page_content(url)
         
         # Store in memory
-        self._last_tool_memory = self.memory.add_tool_memory(
+        tool_memory = self.memory.add_tool_memory(
             tool_name="browser",
             input_data={"url": url},
-            output_data={"content_length": len(content)}
+            output_data={"url": url, "content": content}
         )
+        self._recent_tool_memories.append(tool_memory)
         
         return content
 
@@ -110,26 +113,46 @@ class Agent:
         
         messages = []
         
-        if system_prompt:
-            messages.append(SystemMessage(content=system_prompt))
+        # Use enhanced system prompt if none provided
+        if system_prompt is None:
+            system_prompt = (
+                "You are a helpful AI assistant. When summarizing content:"
+                "\n1. Identify and include all key points"
+                "\n2. Preserve important details and examples"
+                "\n3. Maintain context and relationships between ideas"
+                "\n4. Include specific recommendations or resources mentioned"
+                "\nBe thorough yet concise."
+            )
+        
+        messages.append(SystemMessage(content=system_prompt))
 
         # Get relevant tool outputs
         relevant_tools = self.memory.get_relevant_tool_outputs(message)
         
         # Store user message with any tool outputs since last message
-        tool_outputs = [self._last_tool_memory] if self._last_tool_memory else []
         self.memory.add_conversation_memory(
             role="user",
             content=message,
-            related_tool_outputs=tool_outputs
+            related_tool_outputs=self._recent_tool_memories
         )
         
         # Create context with conversation history and relevant tool outputs
         context = self.memory.get_conversation_context(max_entries=5)
         
+        # Format tool outputs for context
+        tool_context = ""
+        if self._recent_tool_memories:
+            tool_context = "\nRecent tool outputs:\n"
+            for tool in self._recent_tool_memories:
+                if tool.tool_name == "browser" and "content" in tool.output_data:
+                    tool_context += f"\nBrowser content from {tool.output_data['url']}:\n{tool.output_data['content']}\n"
+                else:
+                    tool_context += f"\n{tool.tool_name} output: {json.dumps(tool.output_data, indent=2)}\n"
+        
         # Add context to the message
         context_message = (
-            f"Previous conversation and relevant information:\n\n{context}\n\n"
+            f"Previous conversation and relevant information:\n\n{context}\n"
+            f"{tool_context}\n"
             f"Current message: {message}"
         )
         
@@ -175,7 +198,7 @@ class Agent:
             related_tool_outputs=[]
         )
         
-        # Clear last tool memory
-        self._last_tool_memory = None
+        # Clear recent tool memories
+        self._recent_tool_memories = []
         
         return response.content 
