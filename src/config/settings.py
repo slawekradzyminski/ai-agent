@@ -1,5 +1,6 @@
 """Configuration settings for the AI agent."""
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -14,7 +15,9 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
 # Logging
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').strip()
+if LOG_LEVEL not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
+    LOG_LEVEL = 'INFO'
 
 # Agent Configuration
 AGENT_MODEL = "gpt-3.5-turbo"  # Default model

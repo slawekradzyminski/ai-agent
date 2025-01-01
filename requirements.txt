@@ -11,4 +11,7 @@ requests
 anyio
 httpx
 aiohttp
-tenacity 
+tenacity
+pytest
+pytest-asyncio
+pytest-mock 

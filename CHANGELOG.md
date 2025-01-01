@@ -23,12 +23,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added async support for message processing
 - Added test script (test_tools.py) to verify search and OpenAI functionality
 - Successfully tested DuckDuckGo search and OpenAI integration
+- Added command-line interface with interactive mode
+- Added CLI tests with pytest
+- Verified search functionality with specific website queries
+- Created comprehensive README.md with installation and usage instructions
+- Added proper logging configuration from environment settings
+- Added standalone e2e test script for verifying blog search functionality
 
 ### Changed
 - Updated all dependencies to their latest stable versions
 - Resolved dependency conflicts between langchain packages
 - Improved DuckDuckGo search result parsing
 - Updated imports to use langchain-community and langchain-openai packages
+- Added testing dependencies (pytest, pytest-asyncio, pytest-mock)
+- Enhanced search result parsing and display formatting
+- Improved project documentation with detailed usage examples
+- Moved test_tools.py to tests directory and converted to pytest format
+- Improved logging configuration with proper level handling
+- Moved e2e tests to root directory for easier command-line execution
 
 ### Deprecated
 - None
@@ -40,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed package version conflicts
 - Fixed import paths for proper package structure
 - Fixed DuckDuckGo search result parsing
+- Fixed search result formatting for better readability
+- Fixed logging level configuration in settings
 
 ### Security
 - Added .env to .gitignore to prevent exposure of API keys 

@@ -1,7 +1,16 @@
 """DuckDuckGo search tool implementation."""
+import logging
 from typing import Optional, List, Dict, Any
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain.callbacks.manager import CallbackManagerForToolRun
+from src.config.settings import LOG_LEVEL
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class SearchTool:
@@ -9,7 +18,8 @@ class SearchTool:
 
     def __init__(self):
         """Initialize the search tool with DuckDuckGo backend."""
-        self.search = DuckDuckGoSearchResults(backend="news")
+        logger.info("Initializing SearchTool with DuckDuckGo backends")
+        self.text_search = DuckDuckGoSearchResults(backend="text")
 
     def search_web(
         self,
@@ -27,21 +37,55 @@ class SearchTool:
             List of search results as dictionaries
         """
         try:
-            raw_results = self.search.invoke(query)
-            # Parse the raw results string into a list of dictionaries
-            results = []
-            for result in raw_results.split('\n'):
-                if result.strip():
-                    # Extract title, link, and snippet using string manipulation
-                    parts = result.split(', ')
-                    result_dict = {}
-                    for part in parts:
-                        if ': ' in part:
-                            key, value = part.split(': ', 1)
-                            result_dict[key.strip()] = value.strip()
-                    if result_dict:
-                        results.append(result_dict)
-            return results
+            logger.info(f"Performing web search for query: {query}")
+            
+            # Perform text search
+            logger.debug("Attempting text search")
+            results = self.text_search.invoke(query)
+            logger.debug(f"Raw results: {results}")
+
+            # Parse results
+            all_results = []
+            
+            if results:
+                # Split the results string into individual result entries
+                entries = []
+                current_entry = {}
+                
+                # Parse the comma-separated key-value pairs
+                for part in results.split(', '):
+                    if ': ' in part:
+                        key, value = part.split(': ', 1)
+                        key = key.strip()
+                        value = value.strip()
+                        
+                        if key == 'title' and current_entry:
+                            # Start of a new entry
+                            entries.append(current_entry)
+                            current_entry = {}
+                        
+                        current_entry[key] = value
+                
+                # Add the last entry
+                if current_entry:
+                    entries.append(current_entry)
+                
+                # Convert entries to our standard format
+                for entry in entries:
+                    if 'title' in entry and 'link' in entry:
+                        result = {
+                            'title': entry['title'],
+                            'link': entry['link'],
+                            'source': 'text'
+                        }
+                        if 'snippet' in entry:
+                            result['snippet'] = entry['snippet']
+                        all_results.append(result)
+            
+            logger.info(f"Found {len(all_results)} results")
+            logger.debug(f"Search results: {all_results}")
+            return all_results
+            
         except Exception as e:
-            print(f"Error performing search: {str(e)}")
+            logger.error(f"Error performing search: {str(e)}", exc_info=True)
             return [] 
