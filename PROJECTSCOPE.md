@@ -48,6 +48,7 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
 - [x] Comprehensive documentation with usage examples
 - [x] End-to-end tests for core functionality
 - [x] Web browsing capabilities with Selenium integration
+- [x] Enhanced conversation memory with RAG-like functionality
 
 ## Planned Features
 - [ ] Additional tool integrations:
@@ -55,7 +56,7 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
   - [x] Web browsing capabilities
   - [ ] File operations
   - [ ] Data analysis tools
-- [ ] Enhanced conversation memory
+- [x] Enhanced conversation memory
 - [ ] Improved error handling and recovery
 - [ ] Comprehensive logging system
 - [ ] Configuration file support

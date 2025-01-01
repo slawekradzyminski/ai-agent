@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added browser command to CLI for fetching page content
 - Created end-to-end tests for browser functionality
 - Added Chrome WebDriver integration with headless mode
+- Implemented enhanced conversation memory with RAG-like functionality
+- Added tool output tracking and association with messages
+- Created memory module for structured storage of conversation and tool outputs
+- Added support for retrieving relevant tool outputs for context
 
 ### Changed
 - Updated all dependencies to their latest stable versions

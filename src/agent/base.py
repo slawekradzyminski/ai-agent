@@ -6,6 +6,7 @@ from src.config.settings import OPENAI_API_KEY, AGENT_MODEL, AGENT_TEMPERATURE
 from src.tools.search import SearchTool
 from src.tools.httprequest import HTTPRequestTool
 from src.tools.browser import BrowserTool
+from src.memory.memory import Memory, ToolMemory
 
 class Agent:
     """Base agent class with DuckDuckGo search and HTTP request capabilities."""
@@ -20,7 +21,8 @@ class Agent:
         self.search_tool = SearchTool()
         self.http_tool = HTTPRequestTool()
         self.browser_tool = BrowserTool()
-        self.conversation_history: List[dict] = []
+        self.memory = Memory()
+        self._last_tool_memory: Optional[ToolMemory] = None
 
     def search(self, query: str) -> List[dict]:
         """
@@ -32,7 +34,16 @@ class Agent:
         Returns:
             List of search results
         """
-        return self.search_tool.search_web(query)
+        results = self.search_tool.search_web(query)
+        
+        # Store in memory
+        self._last_tool_memory = self.memory.add_tool_memory(
+            tool_name="search",
+            input_data={"query": query},
+            output_data=results
+        )
+        
+        return results
 
     def http_request(self, url: str) -> Dict[str, Any]:
         """
@@ -44,7 +55,16 @@ class Agent:
         Returns:
             Dictionary containing the response data
         """
-        return self.http_tool.request(url)
+        result = self.http_tool.request(url)
+        
+        # Store in memory
+        self._last_tool_memory = self.memory.add_tool_memory(
+            tool_name="http_request",
+            input_data={"url": url},
+            output_data=result
+        )
+        
+        return result
 
     def get_page_content(self, url: str) -> str:
         """
@@ -56,7 +76,16 @@ class Agent:
         Returns:
             The page content as a string
         """
-        return self.browser_tool.get_page_content(url)
+        content = self.browser_tool.get_page_content(url)
+        
+        # Store in memory
+        self._last_tool_memory = self.memory.add_tool_memory(
+            tool_name="browser",
+            input_data={"url": url},
+            output_data=content[:1000]  # Store truncated content to save memory
+        )
+        
+        return content
 
     async def process_message(
         self,
@@ -78,16 +107,40 @@ class Agent:
         if system_prompt:
             messages.append(SystemMessage(content=system_prompt))
 
-        # Add user message
-        messages.append(HumanMessage(content=message))
+        # Get relevant tool outputs
+        relevant_tools = self.memory.get_relevant_tool_outputs(message)
+        
+        # Store user message with any tool outputs since last message
+        tool_outputs = [self._last_tool_memory] if self._last_tool_memory else []
+        self.memory.add_conversation_memory(
+            role="user",
+            content=message,
+            related_tool_outputs=tool_outputs
+        )
+        
+        # Create context with conversation history and relevant tool outputs
+        context = self.memory.get_conversation_context(max_entries=5)
+        
+        # Add context to the message
+        context_message = (
+            f"Previous conversation and relevant information:\n\n{context}\n\n"
+            f"Current message: {message}"
+        )
+        
+        # Add user message with context
+        messages.append(HumanMessage(content=context_message))
         
         # Get response from LLM
         response = self.llm.invoke(messages)
         
-        # Store in conversation history
-        self.conversation_history.append({
-            "user": message,
-            "assistant": response.content
-        })
+        # Store assistant response
+        self.memory.add_conversation_memory(
+            role="assistant",
+            content=response.content,
+            related_tool_outputs=[]
+        )
+        
+        # Clear last tool memory
+        self._last_tool_memory = None
         
         return response.content 
