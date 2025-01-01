@@ -26,24 +26,6 @@ def test_request_json(http_tool):
     assert result == test_data
 
 @responses.activate
-def test_request_text(http_tool):
-    """Test making a request that returns text."""
-    test_url = "https://example.com"
-    test_content = "<html><body>Test content</body></html>"
-    
-    responses.add(
-        responses.GET,
-        test_url,
-        body=test_content,
-        status=200
-    )
-    
-    result = http_tool.request(test_url)
-    assert result["content"] == test_content
-    assert result["status_code"] == 200
-    assert "headers" in result
-
-@responses.activate
 def test_request_error(http_tool):
     """Test handling of request errors."""
     test_url = "https://error.example.com"

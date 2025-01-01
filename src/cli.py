@@ -144,34 +144,16 @@ class AgentCLI:
                 logger.error(f"Error displaying result {i}: {str(e)}")
                 continue
 
-    def _display_http_result(self, result: Dict[str, Any]):
-        """Display HTTP request result in a formatted manner."""
-        logger.info(f"Displaying HTTP request result for URL: {result.get('url')}")
-        
-        print("\nHTTP Response:")
-        print("---------------")
-        
+    def _display_http_result(self, result: Dict[str, Any]) -> None:
+        """Display the result of an HTTP request."""
         if 'error' in result:
-            print(f"Error: {result['error']}")
+            print(f"\nError: {result['error']}")
             return
-        
-        if result.get('url'):
-            print(f"\nURL: {result['url']}")
-        
-        if result.get('content_type'):
-            print(f"\nContent Type: {result['content_type']}")
-        
-        print(f"\nURL: {result.get('url')}")
-        print(f"Content Type: {result.get('content_type', 'unknown')}")
-        
-        if result.get('content'):
-            print("\nContent:")
-            print("-" * 50)
-            if result['content_type'] == 'json':
-                import json
-                print(json.dumps(result['content'], indent=2))
-            else:
-                print(result['content'])
+
+        print("\nJSON Response:")
+        print("-" * 50)
+        import json
+        print(json.dumps(result, indent=2))
 
     def _process_command(self, command: str) -> None:
         """Process a command and display the result."""
@@ -206,19 +188,6 @@ class AgentCLI:
         print("  help            - Display this help message")
         print("  exit            - Exit the program")
         print("  <message>       - Chat with the agent\n")
-
-    def _display_http_result(self, result: Dict[str, Any]) -> None:
-        """Display the result of an HTTP request."""
-        if 'error' in result:
-            print(f"\nError: {result['error']}")
-            return
-
-        print("\nHTTP Response:")
-        if isinstance(result, dict):
-            for key, value in result.items():
-                print(f"{key}: {value}")
-        else:
-            print(result)
 
 
 def main():
