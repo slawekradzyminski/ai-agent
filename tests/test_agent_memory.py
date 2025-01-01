@@ -46,7 +46,8 @@ async def test_browser_content_in_message_context(agent):
     context_captured = None
     def mock_invoke(messages):
         nonlocal context_captured
-        context_captured = messages[0].content if messages else None
+        # Get the last message which should contain our context
+        context_captured = messages[-1].content if messages else None
         return Mock(content="Test response")
     
     agent.llm.invoke = Mock(side_effect=mock_invoke)
@@ -84,7 +85,8 @@ async def test_multiple_tool_outputs_in_context(agent):
     context_captured = None
     def mock_invoke(messages):
         nonlocal context_captured
-        context_captured = messages[0].content if messages else None
+        # Get the last message which should contain our context
+        context_captured = messages[-1].content if messages else None
         return Mock(content="Test response")
     
     agent.llm.invoke = Mock(side_effect=mock_invoke)

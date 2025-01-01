@@ -1,6 +1,8 @@
 """Tests for the main CLI functionality."""
 import pytest
 from unittest.mock import Mock, patch, call, AsyncMock
+import io
+import sys
 
 from src.cli.main import AgentCLI
 
@@ -123,12 +125,20 @@ class TestAgentCLI:
 
     def test_show_help(self, cli):
         """Test help message display."""
-        with patch('builtins.print') as mock_print:
+        # Capture stdout
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        try:
             cli._show_help()
-            assert mock_print.call_count > 0
-            help_text = "".join(str(call) for call in mock_print.call_args_list)
-            assert "search:" in help_text
-            assert "http:" in help_text
-            assert "browser:" in help_text
-            assert "help" in help_text
-            assert "exit" in help_text 
+            output = captured_output.getvalue()
+            
+            # Verify help message contains key information
+            assert "Available commands:" in output
+            assert "search:" in output
+            assert "http:" in output
+            assert "browser:" in output
+            assert "help" in output
+            assert "exit" in output
+        finally:
+            sys.stdout = sys.__stdout__ 

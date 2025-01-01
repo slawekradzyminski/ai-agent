@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Chat interaction
 - Better error handling and logging in tests
 - Immediate test failure on any component failure
+- Enhanced memory functionality to store and retrieve browser content
+- Added comprehensive tests for memory and content extraction
+- Added new test cases for browser content summarization
+- Updated system prompt to encourage more detailed responses from OpenAI
 
 ### Changed
 - Updated all dependencies to their latest stable versions
@@ -87,6 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved content cleaning by removing navigation, menus, and non-essential elements
 - Added automatic log cleanup in tests
 - Updated .gitignore to properly exclude log files
+- Improved content extraction logic in browser tool
+- Enhanced context handling in process_message method
+- Updated .gitignore to exclude logs directory
 
 ### Deprecated
 - None
@@ -106,4 +113,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed async handling in CLI command processing
 - Fixed test imports after CLI restructuring
 - Fixed content extraction to focus on main article content
-- Fixed test cleanup to properly handle log files 
+- Fixed test cleanup to properly handle log files
+- Fixed async warning in CLI tests by removing unnecessary asyncio mark from non-async test
+- Fixed test_show_help to use proper stdout capture instead of mocking print 
