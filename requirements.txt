@@ -6,7 +6,7 @@ python-dotenv
 openai
 duckduckgo-search
 typing-extensions
-pydantic>=2.7.4
+pydantic>=2.7.4,<3.0.0
 requests
 anyio
 httpx
@@ -15,3 +15,4 @@ tenacity
 pytest
 pytest-asyncio
 pytest-mock
+selenium>=4.15.2

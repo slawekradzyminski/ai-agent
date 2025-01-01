@@ -56,7 +56,7 @@ async def test_interactive_mode_help(mock_print, mock_input, cli):
     """Test the interactive mode help command."""
     await cli.interactive_mode()
     # Verify help message was printed
-    assert any('Available Commands' in str(call) for call in mock_print.call_args_list)
+    assert any('Available commands' in str(call) for call in mock_print.call_args_list)
 
 
 @patch('builtins.input', side_effect=['search: test query', 'exit'])

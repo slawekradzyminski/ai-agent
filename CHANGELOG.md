@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added HTTP request tool for making web requests
 - Added tests for HTTP request functionality
 - Enhanced e2e tests to verify both search and HTTP capabilities
+- Implemented Selenium-based browser tool for web scraping
+- Added browser command to CLI for fetching page content
+- Created end-to-end tests for browser functionality
+- Added Chrome WebDriver integration with headless mode
 
 ### Changed
 - Updated all dependencies to their latest stable versions
@@ -46,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved e2e tests to root directory for easier command-line execution
 - Renamed browser functionality to HTTP request for better clarity
 - Updated CLI interface to use 'http:' command
+- Enhanced browser tool to handle dynamic content loading
+- Updated CLI help messages to include browser command
+- Improved test coverage for browser functionality
+
 ### Deprecated
 - None
 

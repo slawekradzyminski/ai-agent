@@ -5,6 +5,7 @@ from langchain.schema import SystemMessage, HumanMessage
 from src.config.settings import OPENAI_API_KEY, AGENT_MODEL, AGENT_TEMPERATURE
 from src.tools.search import SearchTool
 from src.tools.httprequest import HTTPRequestTool
+from src.tools.browser import BrowserTool
 
 class Agent:
     """Base agent class with DuckDuckGo search and HTTP request capabilities."""
@@ -18,6 +19,7 @@ class Agent:
         )
         self.search_tool = SearchTool()
         self.http_tool = HTTPRequestTool()
+        self.browser_tool = BrowserTool()
         self.conversation_history: List[dict] = []
 
     def search(self, query: str) -> List[dict]:
@@ -43,6 +45,18 @@ class Agent:
             Dictionary containing the response data
         """
         return self.http_tool.request(url)
+
+    def get_page_content(self, url: str) -> str:
+        """
+        Get page content using Selenium Chrome browser.
+
+        Args:
+            url: The URL to open
+
+        Returns:
+            The page content as a string
+        """
+        return self.browser_tool.get_page_content(url)
 
     async def process_message(
         self,

@@ -47,10 +47,12 @@ An autonomous agent built with LangChain framework, capable of performing tasks 
 - [x] Verified search functionality with specific test cases
 - [x] Comprehensive documentation with usage examples
 - [x] End-to-end tests for core functionality
+- [x] Web browsing capabilities with Selenium integration
 
 ## Planned Features
 - [ ] Additional tool integrations:
   - [x] HTTP request capabilities
+  - [x] Web browsing capabilities
   - [ ] File operations
   - [ ] Data analysis tools
 - [ ] Enhanced conversation memory

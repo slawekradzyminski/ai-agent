@@ -56,6 +56,7 @@ class AgentCLI:
         print("Type 'exit' or 'quit' to end the session")
         print("Type 'search: your query' to perform a web search")
         print("Type 'http: url' to make an HTTP request")
+        print("Type 'browser: url' to get page content using Chrome")
         print("Type 'help' for more information")
         print("------------------------\n")
 
@@ -93,6 +94,14 @@ class AgentCLI:
                     self._display_http_result(result)
                     continue
 
+                # Handle browser commands
+                if user_input.lower().startswith('browser:'):
+                    url = user_input[8:].strip()
+                    logger.info(f"Processing browser request: {url}")
+                    content = self.agent.get_page_content(url)
+                    self._display_browser_result(url, content)
+                    continue
+
                 # Process normal message
                 logger.info("Processing chat message")
                 response = await self.agent.process_message(
@@ -105,21 +114,15 @@ class AgentCLI:
                 logger.error(f"Error processing input: {str(e)}", exc_info=True)
                 print(f"\nError: {str(e)}")
 
-    def _show_help(self):
+    def _show_help(self) -> None:
         """Display help information."""
-        logger.debug("Showing help information")
-        print("\nAvailable Commands:")
-        print("------------------")
-        print("search: <query>  - Perform a web search")
-        print("http: <url>      - Make an HTTP request")
-        print("help            - Show this help message")
-        print("exit/quit       - End the session")
-        print("\nGeneral Usage:")
-        print("-------------")
-        print("- Type any message to chat with the AI")
-        print("- Use 'search:' prefix for web searches")
-        print("- Use 'http:' prefix to make HTTP requests")
-        print("- The agent will remember your conversation")
+        print("\nAvailable commands:")
+        print("  search: <query>  - Search the web")
+        print("  http: <url>      - Make an HTTP request to a URL")
+        print("  browser: <url>   - Get page content using Chrome")
+        print("  help            - Display this help message")
+        print("  exit            - Exit the program")
+        print("  <message>       - Chat with the agent\n")
 
     def _display_search_results(self, query: str, results: List[Dict[str, Any]]):
         """Display search results in a formatted manner."""
@@ -155,6 +158,12 @@ class AgentCLI:
         import json
         print(json.dumps(result, indent=2))
 
+    def _display_browser_result(self, url: str, content: str) -> None:
+        """Display the result of a browser request."""
+        print(f"\nPage Content from {url}:")
+        print("-" * 50)
+        print(content[:500] + "..." if len(content) > 500 else content)
+
     def _process_command(self, command: str) -> None:
         """Process a command and display the result."""
         if command.startswith('search:'):
@@ -185,6 +194,7 @@ class AgentCLI:
         print("\nAvailable commands:")
         print("  search: <query>  - Search the web")
         print("  http: <url>      - Make an HTTP request to a URL")
+        print("  browser: <url>   - Get page content using Chrome")
         print("  help            - Display this help message")
         print("  exit            - Exit the program")
         print("  <message>       - Chat with the agent\n")

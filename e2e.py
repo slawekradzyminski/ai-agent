@@ -4,12 +4,13 @@ from src.cli import AgentCLI
 
 def run_tests():
     """Run end-to-end tests."""
-    print("Running end-to-end test for awesome-testing.com search...")
+    print("Running end-to-end tests...")
     
     # Initialize CLI
     cli = AgentCLI()
     
     # Test search functionality
+    print("\nTesting search functionality...")
     results = cli.agent.search("awesome-testing.com")
     
     # Check if the blog is in the results
@@ -29,18 +30,23 @@ def run_tests():
         print("❌ Blog not found in search results")
         sys.exit(1)
     
-    # Test HTTP request functionality
-    print("\nTesting HTTP request functionality on the blog...")
+    # Test browser functionality
+    print("\nTesting browser functionality...")
+    test_url = "https://www.awesome-testing.com/2024/12/from-live-suggestions-to-agents-exploring-ai-powered-ides"
+    expected_text = """AI-powered IDEs are reshaping how we approach software development, combining speed, efficiency, and contextual awareness to create smarter workflows. From live suggestions and RAG integration to chat-based support and agents, these tools are designed to enhance every stage of the development process. We are entering the era of AI-Driven Development."""
+    
     try:
-        response = cli.agent.http_request(blog_url)
-        if isinstance(response, dict):
-            print("✅ Successfully fetched JSON response")
-            print(f"✅ Response contains {len(response)} keys")
+        content = cli.agent.get_page_content(test_url)
+        if expected_text in content:
+            print("✅ Successfully found expected text in page content")
         else:
-            print("❌ Response is not JSON")
+            print("❌ Expected text not found in page content")
+            print("\nActual content snippet:")
+            print("-" * 50)
+            print(content[:500] + "..." if len(content) > 500 else content)
             sys.exit(1)
     except Exception as e:
-        print(f"❌ Error running tests: {str(e)}")
+        print(f"❌ Error accessing page: {str(e)}")
         sys.exit(1)
 
     print("\n✅ All tests passed!")

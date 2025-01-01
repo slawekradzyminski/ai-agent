@@ -1,47 +1,86 @@
-"""HTTP request tool for making web requests."""
+"""Browser tool for web scraping using Selenium."""
 import logging
-import requests
-from typing import Dict, Any, Optional
-from requests.exceptions import RequestException
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import WebDriverException, TimeoutException
 
 logger = logging.getLogger(__name__)
 
-class HTTPRequestTool:
-    """Tool for making HTTP requests to web pages."""
+class BrowserTool:
+    """Tool for browser automation using Selenium."""
 
     def __init__(self):
-        """Initialize the HTTPRequestTool."""
-        logger.info("Initializing HTTPRequestTool")
-        self.session = requests.Session()
+        """Initialize the BrowserTool with Chrome WebDriver."""
+        logger.info("Initializing BrowserTool")
+        self.driver = None
 
-    def request(self, url: str, method: str = 'GET', headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        """Make an HTTP request to the specified URL.
+    def _setup_driver(self):
+        """Set up Chrome WebDriver with appropriate options."""
+        if self.driver is None:
+            options = Options()
+            options.add_argument('--headless')  # Run in headless mode
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--disable-gpu')
+            options.add_argument('--window-size=1920,1080')
+            
+            try:
+                self.driver = webdriver.Chrome(options=options)
+                logger.info("Chrome WebDriver initialized successfully")
+            except WebDriverException as e:
+                logger.error(f"Failed to initialize Chrome WebDriver: {str(e)}")
+                raise
+
+    def get_page_content(self, url: str, wait_time: int = 10) -> str:
+        """
+        Open a URL in Chrome and return the page content.
 
         Args:
-            url: The URL to request.
-            method: The HTTP method to use (default: GET).
-            headers: Optional headers to include in the request.
+            url: The URL to open
+            wait_time: Maximum time to wait for page load in seconds
 
         Returns:
-            Dict containing the response data.
-
-        Raises:
-            RequestException: If the request fails.
+            The page content as a string
         """
         try:
-            logger.info(f"Making {method} request to URL: {url}")
-            response = self.session.request(method, url, headers=headers)
-            response.raise_for_status()
-
+            logger.info(f"Fetching content from URL: {url}")
+            self._setup_driver()
+            
+            # Load the page
+            self.driver.get(url)
+            
+            # Wait for page load
+            WebDriverWait(self.driver, wait_time).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
+            
+            # Wait for any dynamic content to load
             try:
-                return response.json()
-            except ValueError:
-                return {
-                    "content": response.text,
-                    "status_code": response.status_code,
-                    "headers": dict(response.headers)
-                }
+                # Wait for body to contain text
+                WebDriverWait(self.driver, wait_time).until(
+                    lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 0
+                )
+                
+                # Additional wait for any JavaScript frameworks to initialize
+                self.driver.execute_script("return new Promise(resolve => setTimeout(resolve, 1000))")
+            except TimeoutException:
+                logger.warning("Timeout waiting for dynamic content")
+            
+            # Get page content
+            content = self.driver.page_source
+            text_content = self.driver.find_element(By.TAG_NAME, "body").text
+            
+            logger.info(f"Successfully retrieved content from {url}")
+            return text_content
 
-        except RequestException as e:
-            logger.error(f"Error making request to {url}: {str(e)}")
-            raise 
+        except WebDriverException as e:
+            logger.error(f"Error accessing {url}: {str(e)}")
+            raise
+        finally:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None 
