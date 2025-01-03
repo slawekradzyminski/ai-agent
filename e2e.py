@@ -46,10 +46,11 @@ async def run_tests():
             print("\n1. Testing HTTP Request")
             print("----------------------")
             http_result = await http_handler.handle("http: https://jsonplaceholder.typicode.com/posts/1")
-            if http_result.get("title"):
+            if http_result.get('data', {}).get('title') or http_result.get('title'):
                 print("✅ HTTP request successful")
             else:
                 print("❌ HTTP request failed")
+                print(f"Response was: {http_result}")
                 sys.exit(1)
 
             # Test 2: Web Search
