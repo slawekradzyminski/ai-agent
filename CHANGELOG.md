@@ -13,15 +13,13 @@ This file contains only major changes to the project. For detailed changes, plea
 - Implemented Selenium-based browser tool for web scraping
 - Added enhanced conversation memory with RAG-like functionality
 - Added comprehensive test suite including e2e tests
-- Added pytest configuration file with proper asyncio settings
+- Added GitHub Actions workflow for running unit tests on Python 3.13
 
 ### Changed
 - Updated all dependencies to latest stable versions
 - Improved project documentation and structure
 - Enhanced browser tool with better content extraction
 - Improved memory system for better context handling
-- Fixed asyncio test configuration and removed unnecessary test decorators
-- Improved logging configuration with proper file handler cleanup
 
 ### Removed
 - Removed redundant code and test files
@@ -30,6 +28,4 @@ This file contains only major changes to the project. For detailed changes, plea
 ### Fixed
 - Fixed major package conflicts and import issues
 - Fixed content extraction and memory handling
-- Fixed async handling in CLI command processing
-- Fixed ResourceWarning for unclosed file handlers in tests
-- Fixed pydantic deprecation warnings in test output 
+- Fixed async handling in CLI command processing 
