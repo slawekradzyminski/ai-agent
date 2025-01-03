@@ -1,54 +1,50 @@
 """Logging configuration for the application."""
-import os
 import logging
-from logging.handlers import RotatingFileHandler
+import os
 from datetime import datetime
-from pathlib import Path
 
-def setup_request_logger():
-    """
-    Set up a dedicated logger for external requests and responses.
-    Uses rotating file handler to prevent log files from growing too large.
-    """
-    # Get log directory from environment or use default
-    log_dir = Path(os.environ.get("LOG_DIR", "logs"))
-    log_dir.mkdir(exist_ok=True)
-    
-    # Create a logger
-    logger = logging.getLogger("external_requests")
+def setup_logging():
+    """Set up logging configuration."""
+    # Create logs directory if it doesn't exist
+    os.makedirs('logs', exist_ok=True)
+
+    # Get the current month and year for the log file name
+    current_date = datetime.now()
+    log_file = f'logs/requests_{current_date.strftime("%Y%m")}.log'
+
+    # Create logger
+    logger = logging.getLogger('ai_agent')
     logger.setLevel(logging.INFO)
-    
+
     # Remove any existing handlers
-    logger.handlers = []
-    
-    # Create rotating file handler (10MB per file, max 5 files)
-    log_file = log_dir / f"requests_{datetime.now().strftime('%Y%m')}.log"
-    handler = RotatingFileHandler(
-        log_file,
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    
-    # Create formatter with clear separation between entries
-    formatter = logging.Formatter(
-        '\n%(asctime)s - %(name)s - %(levelname)s\n'
-        '----------------------------------------\n'
-        'REQUEST: %(request)s\n'
-        'RESPONSE: %(response)s\n'
-        '----------------------------------------\n'
-    )
-    
-    # Set formatter for handler
-    handler.setFormatter(formatter)
-    
-    # Prevent propagation to avoid duplicate logs
-    logger.propagate = False
-    
-    # Add handler to logger
-    logger.addHandler(handler)
-    
+    for handler in logger.handlers[:]:
+        handler.close()  # Close the handler
+        logger.removeHandler(handler)
+
+    # Create file handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+
+    # Create console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
     return logger
 
+def cleanup_logging(logger):
+    """Clean up logging handlers."""
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
+
 # Create the logger instance
-request_logger = setup_request_logger() 
+request_logger = setup_logging() 

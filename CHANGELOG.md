@@ -21,6 +21,7 @@ This file contains only major changes to the project. For detailed changes, plea
 - Enhanced browser tool with better content extraction
 - Improved memory system for better context handling
 - Fixed asyncio test configuration and removed unnecessary test decorators
+- Improved logging configuration with proper file handler cleanup
 
 ### Removed
 - Removed redundant code and test files
@@ -29,4 +30,6 @@ This file contains only major changes to the project. For detailed changes, plea
 ### Fixed
 - Fixed major package conflicts and import issues
 - Fixed content extraction and memory handling
-- Fixed async handling in CLI command processing 
+- Fixed async handling in CLI command processing
+- Fixed ResourceWarning for unclosed file handlers in tests
+- Fixed pydantic deprecation warnings in test output 
