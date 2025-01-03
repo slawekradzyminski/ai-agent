@@ -1,6 +1,6 @@
 """Tests for the main CLI functionality."""
 import pytest
-from unittest.mock import Mock, patch, call, AsyncMock
+from unittest.mock import Mock, patch, call, AsyncMock, MagicMock
 import io
 import sys
 
@@ -147,4 +147,73 @@ class TestAgentCLI:
             assert "help" in output
             assert "exit" in output
         finally:
-            sys.stdout = sys.__stdout__ 
+            sys.stdout = sys.__stdout__
+
+    @pytest.mark.asyncio
+    async def test_process_single_message_search_error(self, cli):
+        """Test error handling in search command."""
+        async def mock_search(*args, **kwargs):
+            raise Exception("Search failed")
+        cli.agent.search = mock_search
+        
+        with patch('builtins.print') as mock_print:
+            await cli.process_single_message("search: python")
+            printed_text = "".join(str(call) for call in mock_print.call_args_list)
+            assert "Error" in printed_text
+            assert "Search failed" in printed_text
+
+    @pytest.mark.asyncio
+    async def test_process_single_message_browser_error(self, cli):
+        """Test error handling in browser command."""
+        async def mock_get_page_content(*args, **kwargs):
+            raise Exception("Browser failed")
+        cli.agent.get_page_content = mock_get_page_content
+        
+        with patch('builtins.print') as mock_print:
+            await cli.process_single_message("browser: example.com")
+            printed_text = "".join(str(call) for call in mock_print.call_args_list)
+            assert "Error" in printed_text
+            assert "Browser failed" in printed_text
+
+    @pytest.mark.asyncio
+    async def test_interactive_mode_keyboard_interrupt(self, cli):
+        """Test handling of KeyboardInterrupt in interactive mode."""
+        with patch('builtins.input', side_effect=KeyboardInterrupt), \
+             patch('builtins.print') as mock_print:
+            await cli.interactive_mode()
+            mock_print.assert_called_with("\nGoodbye!") 
+
+    @pytest.mark.asyncio
+    async def test_interactive_mode_empty_message(self, cli, capsys):
+        # Mock input to return empty string then 'exit'
+        with patch('builtins.input', side_effect=['', 'exit']):
+            await cli.interactive_mode()
+        
+        captured = capsys.readouterr()
+        assert 'Goodbye!' in captured.out
+
+    @pytest.mark.asyncio
+    async def test_interactive_mode_help_command(self, cli, capsys):
+        # Mock input to return 'help' then 'exit'
+        with patch('builtins.input', side_effect=['help', 'exit']):
+            await cli.interactive_mode()
+        
+        captured = capsys.readouterr()
+        assert 'Available commands:' in captured.out
+        assert 'search:' in captured.out
+        assert 'http:' in captured.out
+        assert 'browser:' in captured.out
+        assert 'help' in captured.out
+        assert 'exit' in captured.out
+
+    @pytest.mark.asyncio
+    async def test_interactive_mode_error(self, cli, capsys):
+        # Mock process_single_message to raise an exception
+        cli.process_single_message = AsyncMock(side_effect=Exception('Test error'))
+        
+        # Mock input to return a message then 'exit'
+        with patch('builtins.input', side_effect=['test message', 'exit']):
+            await cli.interactive_mode()
+        
+        captured = capsys.readouterr()
+        assert 'Error: Test error' in captured.out 

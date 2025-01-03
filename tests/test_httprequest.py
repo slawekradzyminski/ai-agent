@@ -39,3 +39,28 @@ def test_request_error(http_tool):
     result = http_tool.request(test_url)
     assert "error" in result
     assert "Connection failed" in result["error"] 
+
+@responses.activate
+def test_request_non_json_response(http_tool):
+    responses.add(
+        responses.GET,
+        'http://test.com/api',
+        body='Not a JSON response',
+        status=200
+    )
+    
+    result = http_tool.request('http://test.com/api')
+    assert 'error' in result
+    assert 'Error making request: Expecting value' in result['error']
+
+@responses.activate
+def test_request_network_error(http_tool):
+    responses.add(
+        responses.GET,
+        'http://test.com/api',
+        body=responses.ConnectionError()
+    )
+    
+    result = http_tool.request('http://test.com/api')
+    assert 'error' in result
+    assert 'Error making request' in result['error'] 
