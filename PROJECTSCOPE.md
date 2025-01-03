@@ -1,77 +1,41 @@
 # AI Agent Project Scope
 
+This document contains only major project information. For detailed information, please refer to the codebase and documentation.
+
 ## Project Overview
 An autonomous agent built with LangChain framework, capable of performing tasks and interacting with various tools and APIs.
 
-## Current Status
-- ✅ Initial project setup complete
-- ✅ DuckDuckGo search tool integration implemented and tested
-- ✅ OpenAI integration implemented and tested
-- ✅ Basic agent framework with async support
-- ✅ Command-line interface implemented
-- ✅ Search functionality verified with real-world queries
-- ✅ Project documentation completed with usage guide
-- ✅ End-to-end tests implemented for core functionality
-- ✅ HTTP request functionality implemented and tested
-- 🚧 Additional tool integrations (Planned)
-
 ## Core Objectives
 1. Create an autonomous agent using LangChain framework
-2. Implement tool integration capabilities starting with DuckDuckGo search
-3. Maintain modular and extensible architecture for future tool additions
-4. Provide easy-to-use interfaces for interaction
-5. Ensure robust error handling and logging
-6. Maintain comprehensive test coverage including e2e tests
+2. Implement tool integration capabilities (Search, HTTP, Browser)
+3. Maintain modular and extensible architecture
+4. Provide easy-to-use command-line interface
+5. Ensure robust testing and error handling
 
 ## Technical Stack
 - Python 3.9+
-- LangChain framework (latest version)
+- LangChain framework
 - OpenAI GPT integration
 - DuckDuckGo search API
-- HTTP request capabilities
-- Async support with aiohttp
-- Environment management with python-dotenv
-- Testing with pytest and standalone e2e tests
+- Selenium for web browsing
+- Testing with pytest
 
-## Current Features
-- [x] Project structure setup
-- [x] DuckDuckGo search tool integration
-- [x] Basic agent framework
-- [x] OpenAI chat model integration
-- [x] Async message processing
-- [x] Configuration management
-- [x] Test suite for core functionality
-- [x] Command-line interface with interactive mode
-- [x] Search command integration in CLI
-- [x] HTTP request functionality with response handling
-- [x] Verified search functionality with specific test cases
-- [x] Comprehensive documentation with usage examples
-- [x] End-to-end tests for core functionality
-- [x] Web browsing capabilities with Selenium integration
-- [x] Enhanced conversation memory with RAG-like functionality
+## Major Features
+- [x] DuckDuckGo search integration
+- [x] HTTP request capabilities
+- [x] Web browsing with Selenium
+- [x] Enhanced conversation memory
+- [x] Command-line interface
+- [x] Comprehensive test suite
 
 ## Planned Features
-- [ ] Additional tool integrations:
-  - [x] HTTP request capabilities
-  - [x] Web browsing capabilities
-  - [ ] File operations
-  - [ ] Data analysis tools
-- [x] Enhanced conversation memory
-- [ ] Improved error handling and recovery
-- [ ] Comprehensive logging system
-- [ ] Configuration file support
+- [ ] File operations
+- [ ] Data analysis tools
 - [ ] API endpoint for web integration
-
-## Constraints
-- Must follow best practices for AI safety
-- Must maintain proper documentation
-- Must update CHANGELOG.md with all significant changes
-- Must handle API keys and sensitive data securely
-- Must maintain compatibility with latest LangChain versions
+- [ ] Configuration file support
 
 ## Development Guidelines
 1. All new features must include tests
 2. Documentation must be updated with changes
 3. Code must follow PEP 8 style guide
-4. Security best practices must be followed
-5. Dependencies must be kept up to date 
+4. Security best practices must be followed 
