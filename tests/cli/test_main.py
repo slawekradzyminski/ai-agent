@@ -36,7 +36,11 @@ class TestAgentCLI:
     @pytest.mark.asyncio
     async def test_process_single_message_http(self, cli):
         """Test processing an HTTP command."""
-        mock_response = {"status": "ok"}
+        mock_response = {
+            'status_code': 200,
+            'content_type': 'application/json',
+            'data': {'status': 'ok'}
+        }
         async def mock_http_request(*args, **kwargs):
             return mock_response
         cli.agent.http_request = mock_http_request
