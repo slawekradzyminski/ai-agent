@@ -1,16 +1,38 @@
 # AI Agent
 
-An AI agent with web search and HTTP request capabilities, built with LangChain and OpenAI.
+An autonomous agent built with LangChain framework, capable of performing tasks and interacting with various tools and APIs.
+
+## Core Objectives
+1. Create an autonomous agent using LangChain framework
+2. Implement tool integration capabilities (Search, HTTP, Browser)
+3. Maintain modular and extensible architecture
+4. Provide easy-to-use command-line interface
+5. Ensure robust testing and error handling
+
+## Technical Stack
+- Python 3.9+
+- LangChain framework
+- OpenAI GPT integration
+- DuckDuckGo search API
+- Selenium for web browsing
+- Testing with pytest
 
 ## Features
+### Current
+- [x] Chat interaction using OpenAI's language models
+- [x] DuckDuckGo search integration
+- [x] HTTP request capabilities
+- [x] Web browsing with Selenium
+- [x] Enhanced conversation memory
+- [x] Interactive command-line interface
+- [x] Comprehensive test suite
+- [x] Modular command handling system
 
-- Chat interaction using OpenAI's language models
-- Web search using DuckDuckGo
-- HTTP requests to fetch web content
-- Browser-based web scraping with Chrome
-- Interactive command-line interface
-- Conversation history tracking
-- Modular command handling system
+### Planned
+- [ ] File operations
+- [ ] Data analysis tools
+- [ ] API endpoint for web integration
+- [ ] Configuration file support
 
 ## Installation
 
@@ -82,18 +104,6 @@ You: browser: https://example.com
 You: What is the capital of France?
 ```
 
-## Testing
-
-Run the test suite:
-```bash
-python -m pytest tests/
-```
-
-Run end-to-end tests:
-```bash
-python e2e.py
-```
-
 ## Project Structure
 
 - `src/` - Source code
@@ -110,6 +120,24 @@ python e2e.py
 - `tests/` - Test suite
   - `cli/` - CLI-specific tests
 - `e2e.py` - End-to-end tests
+
+## Testing
+
+Run the test suite:
+```bash
+python -m pytest tests/
+```
+
+Run end-to-end tests:
+```bash
+python e2e.py
+```
+
+## Development Guidelines
+1. All new features must include tests
+2. Documentation must be updated with changes
+3. Code must follow PEP 8 style guide
+4. Security best practices must be followed
 
 ## Contributing
 
