@@ -13,12 +13,14 @@ This file contains only major changes to the project. For detailed changes, plea
 - Implemented Selenium-based browser tool for web scraping
 - Added enhanced conversation memory with RAG-like functionality
 - Added comprehensive test suite including e2e tests
+- Added pytest configuration file with proper asyncio settings
 
 ### Changed
 - Updated all dependencies to latest stable versions
 - Improved project documentation and structure
 - Enhanced browser tool with better content extraction
 - Improved memory system for better context handling
+- Fixed asyncio test configuration and removed unnecessary test decorators
 
 ### Removed
 - Removed redundant code and test files

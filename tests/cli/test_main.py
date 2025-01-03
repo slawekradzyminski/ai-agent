@@ -16,10 +16,10 @@ def cli():
         cli.agent = mock_agent
         return cli
 
-@pytest.mark.asyncio
 class TestAgentCLI:
     """Tests for the AgentCLI class."""
 
+    @pytest.mark.asyncio
     async def test_process_single_message_search(self, cli):
         """Test processing a search command."""
         mock_results = [{"title": "Test", "link": "http://test.com"}]
@@ -33,6 +33,7 @@ class TestAgentCLI:
             assert "Test" in printed_text
             assert "http://test.com" in printed_text
 
+    @pytest.mark.asyncio
     async def test_process_single_message_http(self, cli):
         """Test processing an HTTP command."""
         mock_response = {"status": "ok"}
@@ -46,6 +47,7 @@ class TestAgentCLI:
             assert "status" in printed_text
             assert "ok" in printed_text
 
+    @pytest.mark.asyncio
     async def test_process_single_message_browser(self, cli):
         """Test processing a browser command."""
         mock_content = "Page content"
@@ -58,6 +60,7 @@ class TestAgentCLI:
             printed_text = "".join(str(call) for call in mock_print.call_args_list)
             assert mock_content in printed_text
 
+    @pytest.mark.asyncio
     async def test_process_single_message_chat(self, cli):
         """Test processing a chat message."""
         mock_response = "Assistant response"
@@ -69,6 +72,7 @@ class TestAgentCLI:
             await cli.process_single_message("Hello")
             mock_print.assert_called_with("\nAssistant: Assistant response")
 
+    @pytest.mark.asyncio
     async def test_process_single_message_http_error_handling(self, cli):
         """Test HTTP error handling in message processing."""
         mock_error = {"error": "Connection failed"}
@@ -82,6 +86,7 @@ class TestAgentCLI:
             assert "Error" in printed_text
             assert "Connection failed" in printed_text
 
+    @pytest.mark.asyncio
     async def test_process_single_message_browser_long_content(self, cli):
         """Test browser content truncation in message processing."""
         mock_content = "A" * 1000  # Long content
@@ -95,6 +100,7 @@ class TestAgentCLI:
             assert "..." in printed_text
             assert len(printed_text) < len(mock_content)
 
+    @pytest.mark.asyncio
     async def test_interactive_mode(self, cli):
         """Test interactive mode with various commands."""
         mock_inputs = ["help", "search: python", "exit"]
