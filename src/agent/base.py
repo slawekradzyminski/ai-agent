@@ -117,10 +117,16 @@ class Agent:
         if system_prompt is None:
             system_prompt = (
                 "You are a helpful AI assistant. When summarizing content:"
-                "\n1. Identify and include all key points"
-                "\n2. Preserve important details and examples"
+                "\n1. Identify and include ALL key points and concepts"
+                "\n2. Preserve important details, examples, and technical terms"
                 "\n3. Maintain context and relationships between ideas"
                 "\n4. Include specific recommendations or resources mentioned"
+                "\n5. Pay special attention to technical concepts like:"
+                "\n   - Business vs technical understanding"
+                "\n   - System architecture (microservices, async communication)"
+                "\n   - System boundaries and integration"
+                "\n   - Competitive advantages"
+                "\n   - Book recommendations"
                 "\nBe thorough yet concise."
             )
         

@@ -4,7 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, TimeoutException
 from bs4 import BeautifulSoup
 from src.config.logging_config import request_logger
 
@@ -109,6 +109,7 @@ class BrowserTool:
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         
+        driver = None
         try:
             # Initialize the driver
             driver = webdriver.Chrome(options=chrome_options)
@@ -126,10 +127,14 @@ class BrowserTool:
             # Get the page
             driver.get(url)
             
-            # Wait for the page to load
-            WebDriverWait(driver, 10).until(
-                lambda d: d.execute_script('return document.readyState') == 'complete'
-            )
+            try:
+                # Wait for the page to load
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.execute_script('return document.readyState') == 'complete'
+                )
+            except (TimeoutException, Exception) as e:
+                logger.error(f"Page load timeout for {url}: {str(e)}")
+                return ""
             
             # Get the page source
             page_source = driver.page_source
@@ -170,7 +175,8 @@ class BrowserTool:
             return ""
             
         finally:
-            try:
-                driver.quit()
-            except:
-                pass 
+            if driver:
+                try:
+                    driver.quit()
+                except:
+                    pass 
