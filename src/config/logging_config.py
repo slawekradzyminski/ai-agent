@@ -1,7 +1,24 @@
 """Logging configuration for the application."""
 import logging
 import os
+import traceback
 from datetime import datetime
+import json
+
+class CustomFormatter(logging.Formatter):
+    """Custom formatter that properly handles extra fields."""
+    
+    def format(self, record):
+        """Format the record with extra fields."""
+        # Format the basic message
+        formatted = super().format(record)
+        
+        # Add extra fields if they exist
+        if hasattr(record, 'extra'):
+            extra_formatted = json.dumps(record.extra, indent=2)
+            formatted += f"\nExtra Data:\n{extra_formatted}"
+            
+        return formatted
 
 def setup_logging():
     """Set up logging configuration."""
@@ -14,25 +31,27 @@ def setup_logging():
 
     # Create logger
     logger = logging.getLogger('ai_agent')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)  # Set to DEBUG to capture all levels
 
     # Remove any existing handlers
     for handler in logger.handlers[:]:
-        handler.close()  # Close the handler
+        handler.close()
         logger.removeHandler(handler)
 
     # Create file handler
     file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)  # Set file handler to DEBUG level
 
-    # Create console handler
+    # Create console handler with a higher log level
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
 
-    # Create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
+    # Create formatters
+    file_formatter = CustomFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    file_handler.setFormatter(file_formatter)
+    console_handler.setFormatter(console_formatter)
 
     # Add handlers to logger
     logger.addHandler(file_handler)

@@ -1,5 +1,7 @@
 """Browser tool for fetching web page content."""
 import logging
+import json
+import traceback
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -101,7 +103,23 @@ class BrowserTool:
         Returns:
             str: The parsed page content with only meaningful text.
         """
-        logger.info(f"Fetching content from URL: {url}")
+        # Log request initiation
+        request_logger.info(f"Browser request initiated to: {url}")
+        request_logger.debug(
+            "Browser request details",
+            extra={
+                'request': {
+                    'method': 'GET',
+                    'url': url,
+                    'tool': 'BrowserTool',
+                    'options': {
+                        'headless': True,
+                        'no-sandbox': True,
+                        'disable-dev-shm-usage': True
+                    }
+                }
+            }
+        )
         
         # Set up Chrome options
         chrome_options = Options()
@@ -113,16 +131,24 @@ class BrowserTool:
         try:
             # Initialize the driver
             driver = webdriver.Chrome(options=chrome_options)
-            logger.info("Chrome WebDriver initialized successfully")
             
-            # Log the page visit
-            request_logger.info(
-                "Browser Page Visit",
-                extra={
-                    'request': f"URL: {url}",
-                    'response': "Starting page load..."
-                }
+            # Create initialization record
+            init_record = logging.LogRecord(
+                name='ai_agent',
+                level=logging.DEBUG,
+                pathname=__file__,
+                lineno=0,
+                msg="Chrome WebDriver initialized",
+                args=(),
+                exc_info=None
             )
+            init_record.extra = {
+                'browser_init': {
+                    'status': 'success',
+                    'options': chrome_options.arguments
+                }
+            }
+            request_logger.handle(init_record)
             
             # Get the page
             driver.get(url)
@@ -133,42 +159,94 @@ class BrowserTool:
                     lambda d: d.execute_script('return document.readyState') == 'complete'
                 )
             except (TimeoutException, Exception) as e:
-                logger.error(f"Page load timeout for {url}: {str(e)}")
+                error_msg = f"Page load timeout for {url}: {str(e)}"
+                request_logger.error(
+                    "Browser Page Load Timeout",
+                    extra={
+                        'error_details': {
+                            'request': {
+                                'url': url,
+                                'tool': 'BrowserTool'
+                            },
+                            'error': {
+                                'type': type(e).__name__,
+                                'message': str(e),
+                                'details': repr(e),
+                                'traceback': traceback.format_exc()
+                            }
+                        }
+                    }
+                )
                 return ""
-            
+
             # Get the page source
             page_source = driver.page_source
             
             # Parse and clean the content
             text = self._parse_html_content(page_source)
             
-            # Log both raw HTML and cleaned text
+            # Create complete response record
+            response_record = logging.LogRecord(
+                name='ai_agent',
+                level=logging.DEBUG,
+                pathname=__file__,
+                lineno=0,
+                msg="Complete Browser Response",
+                args=(),
+                exc_info=None
+            )
+            response_record.extra = {
+                'request': {
+                    'method': 'GET',
+                    'url': url,
+                    'tool': 'BrowserTool'
+                },
+                'response': {
+                    'page_title': driver.title,
+                    'current_url': driver.current_url,
+                    'raw_html_length': len(page_source),
+                    'cleaned_text_length': len(text),
+                    'raw_html': page_source[:1000] + '...' if len(page_source) > 1000 else page_source,
+                    'cleaned_text': text
+                }
+            }
+            request_logger.handle(response_record)
+            
+            # Log summary at info level
             request_logger.info(
-                "Browser Content Retrieved",
+                f"Browser request completed: title='{driver.title}', "
+                f"content_length={len(text)} chars",
                 extra={
-                    'request': f"URL: {url}",
-                    'response': (
-                        f"Raw HTML length: {len(page_source)}\n"
-                        f"Cleaned text length: {len(text)}\n"
-                        f"Returned cleaned text:\n{text}"
-                    )
+                    'summary': {
+                        'request_url': url,
+                        'final_url': driver.current_url,
+                        'page_title': driver.title,
+                        'content_length': len(text)
+                    }
                 }
             )
-            
-            logger.info(f"Successfully retrieved content from {url}")
             
             return text
             
         except WebDriverException as e:
             error_msg = f"Error fetching content from {url}: {str(e)}"
-            logger.error(error_msg)
             
-            # Log the error
+            # Log complete error details
             request_logger.error(
-                "Browser Page Load Failed",
+                "Browser Request Failed",
                 extra={
-                    'request': f"URL: {url}",
-                    'response': f"Error: {str(e)}"
+                    'error_details': {
+                        'request': {
+                            'url': url,
+                            'tool': 'BrowserTool'
+                        },
+                        'error': {
+                            'type': type(e).__name__,
+                            'message': str(e),
+                            'details': repr(e),
+                            'traceback': traceback.format_exc()
+                        }
+                    }
                 }
             )
             
@@ -178,5 +256,22 @@ class BrowserTool:
             if driver:
                 try:
                     driver.quit()
-                except:
-                    pass 
+                    request_logger.debug(
+                        "Browser session cleanup",
+                        extra={
+                            'cleanup': {
+                                'status': 'success',
+                                'url': url
+                            }
+                        }
+                    )
+                except Exception as e:
+                    request_logger.error(
+                        "Browser cleanup failed",
+                        extra={
+                            'cleanup_error': {
+                                'url': url,
+                                'error': str(e)
+                            }
+                        }
+                    ) 

@@ -1,5 +1,7 @@
 """Search tool implementation using DuckDuckGo."""
 import logging
+import json
+import traceback
 from typing import List, Dict, Any
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from src.config.logging_config import request_logger
@@ -11,7 +13,7 @@ class SearchTool:
 
     def __init__(self):
         """Initialize the search tool with DuckDuckGo backend."""
-        logger.info("Initializing SearchTool with DuckDuckGo backends")
+        logger.info("Initializing SearchTool with DuckDuckGo backend")
         self.search = DuckDuckGoSearchAPIWrapper()
 
     def search_web(self, query: str) -> List[Dict[str, Any]]:
@@ -24,7 +26,19 @@ class SearchTool:
         Returns:
             List of search results
         """
-        logger.info(f"Performing web search for query: {query}")
+        # Log search initiation
+        request_logger.info(f"Search request initiated with query: {query}")
+        request_logger.debug(
+            "Search request details",
+            extra={
+                'request': {
+                    'tool': 'SearchTool',
+                    'engine': 'DuckDuckGo',
+                    'query': query,
+                    'max_results': 4
+                }
+            }
+        )
         
         try:
             # Get raw results
@@ -41,28 +55,64 @@ class SearchTool:
                 for result in raw_results
             ]
             
-            # Log the request and response
+            # Create complete response record
+            response_record = logging.LogRecord(
+                name='ai_agent',
+                level=logging.DEBUG,
+                pathname=__file__,
+                lineno=0,
+                msg="Complete Search Response",
+                args=(),
+                exc_info=None
+            )
+            response_record.extra = {
+                'request': {
+                    'tool': 'SearchTool',
+                    'engine': 'DuckDuckGo',
+                    'query': query
+                },
+                'response': {
+                    'result_count': len(results),
+                    'raw_results': raw_results,
+                    'formatted_results': results
+                }
+            }
+            request_logger.handle(response_record)
+            
+            # Log summary at info level
             request_logger.info(
-                "DuckDuckGo Search",
+                f"Search completed: found {len(results)} results",
                 extra={
-                    'request': f"Query: {query}",
-                    'response': f"Found {len(results)} results: {results}"
+                    'summary': {
+                        'query': query,
+                        'result_count': len(results),
+                        'result_urls': [r['link'] for r in results]
+                    }
                 }
             )
             
-            logger.info(f"Found {len(results)} results")
             return results
             
         except Exception as e:
             error_msg = f"Error performing search: {str(e)}"
-            logger.error(error_msg)
             
-            # Log the error
+            # Log complete error details
             request_logger.error(
-                "DuckDuckGo Search Failed",
+                "Search Request Failed",
                 extra={
-                    'request': f"Query: {query}",
-                    'response': f"Error: {str(e)}"
+                    'error_details': {
+                        'request': {
+                            'tool': 'SearchTool',
+                            'engine': 'DuckDuckGo',
+                            'query': query
+                        },
+                        'error': {
+                            'type': type(e).__name__,
+                            'message': str(e),
+                            'details': repr(e),
+                            'traceback': traceback.format_exc()
+                        }
+                    }
                 }
             )
             
