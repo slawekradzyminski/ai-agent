@@ -10,8 +10,8 @@ def http_tool():
     return HTTPRequestTool()
 
 @responses.activate
-def test_request_success(http_tool):
-    """Test successful HTTP request."""
+def test_request_json_response(http_tool):
+    """Test successful HTTP request with JSON response."""
     test_url = "https://test.example.com"
     test_response = {"status": "ok", "data": "test"}
     
@@ -19,11 +19,54 @@ def test_request_success(http_tool):
         responses.GET,
         test_url,
         json=test_response,
-        status=200
+        status=200,
+        content_type='application/json'
     )
     
     result = http_tool.request(test_url)
-    assert result == test_response
+    assert result['status_code'] == 200
+    assert 'application/json' in result['content_type']
+    assert result['data'] == test_response
+
+@responses.activate
+def test_request_html_response(http_tool):
+    """Test successful HTTP request with HTML response."""
+    test_url = "https://test.example.com"
+    test_html = "<html><body>Test content</body></html>"
+    
+    responses.add(
+        responses.GET,
+        test_url,
+        body=test_html,
+        status=200,
+        content_type='text/html'
+    )
+    
+    result = http_tool.request(test_url)
+    assert result['status_code'] == 200
+    assert 'text/html' in result['content_type']
+    assert result['data']['content'] == test_html
+    assert result['data']['content_type'] == 'text/html'
+
+@responses.activate
+def test_request_text_response(http_tool):
+    """Test successful HTTP request with plain text response."""
+    test_url = "https://test.example.com"
+    test_text = "Plain text content"
+    
+    responses.add(
+        responses.GET,
+        test_url,
+        body=test_text,
+        status=200,
+        content_type='text/plain'
+    )
+    
+    result = http_tool.request(test_url)
+    assert result['status_code'] == 200
+    assert 'text/plain' in result['content_type']
+    assert result['data']['content'] == test_text
+    assert result['data']['content_type'] == 'text/plain'
 
 @responses.activate
 def test_request_error(http_tool):
@@ -38,29 +81,24 @@ def test_request_error(http_tool):
     
     result = http_tool.request(test_url)
     assert "error" in result
-    assert "Connection failed" in result["error"] 
+    assert "Connection failed" in result["error"]
 
 @responses.activate
-def test_request_non_json_response(http_tool):
+def test_request_unknown_content_type(http_tool):
+    """Test handling of unknown content type."""
+    test_url = "https://test.example.com"
+    test_content = "Some binary data"
+    
     responses.add(
         responses.GET,
-        'http://test.com/api',
-        body='Not a JSON response',
-        status=200
+        test_url,
+        body=test_content,
+        status=200,
+        content_type='application/octet-stream'
     )
     
-    result = http_tool.request('http://test.com/api')
-    assert 'error' in result
-    assert 'Error making request: Expecting value' in result['error']
-
-@responses.activate
-def test_request_network_error(http_tool):
-    responses.add(
-        responses.GET,
-        'http://test.com/api',
-        body=responses.ConnectionError()
-    )
-    
-    result = http_tool.request('http://test.com/api')
-    assert 'error' in result
-    assert 'Error making request' in result['error'] 
+    result = http_tool.request(test_url)
+    assert result['status_code'] == 200
+    assert 'application/octet-stream' in result['content_type']
+    assert result['data']['content'] == test_content
+    assert result['data']['content_type'] == 'application/octet-stream' 

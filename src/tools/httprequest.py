@@ -27,18 +27,42 @@ class HTTPRequestTool:
         
         try:
             response = requests.get(url)
-            response_data = response.json()
+            content_type = response.headers.get('content-type', '').lower()
+            
+            # Extract response data based on content type
+            if 'application/json' in content_type:
+                response_data = response.json()
+            elif 'text/html' in content_type:
+                response_data = {
+                    'content': response.text,
+                    'content_type': 'text/html'
+                }
+            elif 'text/plain' in content_type:
+                response_data = {
+                    'content': response.text,
+                    'content_type': 'text/plain'
+                }
+            else:
+                # Default to treating as text
+                response_data = {
+                    'content': response.text,
+                    'content_type': content_type
+                }
             
             # Log the request and response
             request_logger.info(
                 "HTTP Request",
                 extra={
                     'request': f"GET {url}",
-                    'response': f"Status: {response.status_code}, Body: {response_data}"
+                    'response': f"Status: {response.status_code}, Content-Type: {content_type}"
                 }
             )
             
-            return response_data
+            return {
+                'status_code': response.status_code,
+                'content_type': content_type,
+                'data': response_data
+            }
             
         except requests.exceptions.RequestException as e:
             error_msg = f"Error making request: {str(e)}"
@@ -55,7 +79,7 @@ class HTTPRequestTool:
             
             return {"error": error_msg}
         except ValueError as e:
-            error_msg = f"Error parsing JSON response: {str(e)}"
+            error_msg = f"Error parsing response: {str(e)}"
             logger.error(error_msg)
             
             # Log the error
@@ -63,7 +87,7 @@ class HTTPRequestTool:
                 "HTTP Response Parsing Failed",
                 extra={
                     'request': f"GET {url}",
-                    'response': f"Error parsing JSON: {str(e)}"
+                    'response': f"Error parsing response: {str(e)}"
                 }
             )
             

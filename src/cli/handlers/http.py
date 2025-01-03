@@ -25,4 +25,18 @@ class HttpHandler(BaseHandler):
         if 'error' in result:
             return f"\nError: {result['error']}"
         
-        return "\nJSON Response:\n" + "-" * 50 + "\n" + json.dumps(result, indent=2) 
+        output = [
+            f"\nStatus Code: {result['status_code']}",
+            f"Content Type: {result['content_type']}",
+            "-" * 50
+        ]
+        
+        data = result['data']
+        if isinstance(data, dict) and 'content_type' in data:
+            # Text/HTML/Other content
+            output.append(data['content'])
+        else:
+            # JSON content
+            output.append(json.dumps(data, indent=2))
+            
+        return "\n".join(output) 
