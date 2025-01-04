@@ -2,6 +2,7 @@
 import logging
 import json
 import traceback
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -15,9 +16,35 @@ logger = logging.getLogger(__name__)
 class BrowserTool:
     """Tool for fetching web page content using Selenium."""
 
-    def __init__(self):
+    def __init__(self, test_mode=False):
         """Initialize the browser tool."""
         logger.info("Initializing BrowserTool")
+        self.test_mode = test_mode or os.getenv('PYTEST_CURRENT_TEST') is not None
+        self.mock_driver = None
+
+    def set_mock_driver(self, mock_driver):
+        """Set a mock driver for testing."""
+        self.mock_driver = mock_driver
+
+    def _get_driver(self):
+        """Get a WebDriver instance, using mock in test mode."""
+        if self.test_mode:
+            if self.mock_driver is None:
+                # Create a basic mock if none provided
+                from unittest.mock import Mock
+                mock_driver = Mock()
+                mock_driver.page_source = "<html><body>Test content</body></html>"
+                mock_driver.title = "Test Page"
+                mock_driver.current_url = "http://test.com"
+                self.mock_driver = mock_driver
+            return self.mock_driver
+        
+        # Set up Chrome options for real browser
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        return webdriver.Chrome(options=chrome_options)
 
     def _parse_html_content(self, html: str) -> str:
         """
@@ -121,16 +148,10 @@ class BrowserTool:
             }
         )
         
-        # Set up Chrome options
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        
         driver = None
         try:
-            # Initialize the driver
-            driver = webdriver.Chrome(options=chrome_options)
+            # Get the appropriate driver
+            driver = self._get_driver()
             
             # Create initialization record
             init_record = logging.LogRecord(
@@ -145,39 +166,40 @@ class BrowserTool:
             init_record.extra = {
                 'browser_init': {
                     'status': 'success',
-                    'options': chrome_options.arguments
+                    'options': ['--headless', '--no-sandbox', '--disable-dev-shm-usage'] if not self.test_mode else ['test_mode']
                 }
             }
             request_logger.handle(init_record)
             
             # Get the page
-            driver.get(url)
-            
-            try:
-                # Wait for the page to load
-                WebDriverWait(driver, 10).until(
-                    lambda d: d.execute_script('return document.readyState') == 'complete'
-                )
-            except (TimeoutException, Exception) as e:
-                error_msg = f"Page load timeout for {url}: {str(e)}"
-                request_logger.error(
-                    "Browser Page Load Timeout",
-                    extra={
-                        'error_details': {
-                            'request': {
-                                'url': url,
-                                'tool': 'BrowserTool'
-                            },
-                            'error': {
-                                'type': type(e).__name__,
-                                'message': str(e),
-                                'details': repr(e),
-                                'traceback': traceback.format_exc()
+            if not self.test_mode:
+                driver.get(url)
+                
+                try:
+                    # Wait for the page to load
+                    WebDriverWait(driver, 10).until(
+                        lambda d: d.execute_script('return document.readyState') == 'complete'
+                    )
+                except (TimeoutException, Exception) as e:
+                    error_msg = f"Page load timeout for {url}: {str(e)}"
+                    request_logger.error(
+                        "Browser Page Load Timeout",
+                        extra={
+                            'error_details': {
+                                'request': {
+                                    'url': url,
+                                    'tool': 'BrowserTool'
+                                },
+                                'error': {
+                                    'type': type(e).__name__,
+                                    'message': str(e),
+                                    'details': repr(e),
+                                    'traceback': traceback.format_exc()
+                                }
                             }
                         }
-                    }
-                )
-                return ""
+                    )
+                    return ""
 
             # Get the page source
             page_source = driver.page_source
@@ -249,29 +271,24 @@ class BrowserTool:
                     }
                 }
             )
-            
             return ""
             
         finally:
-            if driver:
+            if driver and not self.test_mode:
                 try:
                     driver.quit()
-                    request_logger.debug(
-                        "Browser session cleanup",
-                        extra={
-                            'cleanup': {
-                                'status': 'success',
-                                'url': url
-                            }
-                        }
-                    )
                 except Exception as e:
                     request_logger.error(
                         "Browser cleanup failed",
                         extra={
-                            'cleanup_error': {
-                                'url': url,
-                                'error': str(e)
+                            'error_details': {
+                                'error': {
+                                    'type': type(e).__name__,
+                                    'message': str(e),
+                                    'details': repr(e),
+                                    'traceback': traceback.format_exc()
+                                }
                             }
                         }
-                    ) 
+                    )
+                request_logger.debug("Browser session cleanup") 

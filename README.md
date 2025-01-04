@@ -9,8 +9,10 @@ An AI agent with web search and HTTP request capabilities, built with LangChain 
 - HTTP requests to fetch web content
 - Browser-based web scraping with Chrome
 - Interactive command-line interface
-- Conversation history tracking
+- Advanced conversation history with LangChain's latest patterns
 - Modular command handling system
+- Autonomous tool selection based on context
+- Proper error handling and logging
 
 ## Installation
 
@@ -98,6 +100,7 @@ python e2e.py
 
 - `src/` - Source code
   - `agent/` - Agent implementation
+    - `base.py` - Core agent with autonomous tool selection
   - `cli/` - Command-line interface
     - `handlers/` - Command handlers
       - `base.py` - Base handler class
@@ -106,10 +109,37 @@ python e2e.py
       - `browser.py` - Browser command handler
     - `main.py` - Main CLI entry point
   - `tools/` - Tool implementations (search, HTTP, browser)
+  - `memory/` - Memory and chat history management
   - `config/` - Configuration management
 - `tests/` - Test suite
   - `cli/` - CLI-specific tests
+  - `context/` - Context building tests
+  - `test_agent.py` - Agent tests
+  - `test_memory.py` - Memory system tests
 - `e2e.py` - End-to-end tests
+
+## Key Components
+
+### Agent
+
+The agent uses LangChain's latest patterns for:
+- Autonomous tool selection based on context
+- Advanced conversation history management
+- Proper message type handling
+- Error handling and logging
+
+### Memory System
+
+Uses LangChain's latest memory patterns:
+- Custom `ChatMessageHistory` implementation
+- Proper message type handling with `HumanMessage` and `AIMessage`
+- Efficient conversation history management
+
+### Tools
+
+- `web_search`: DuckDuckGo search integration
+- `http_request`: HTTP request handling
+- `browser`: Chrome-based web scraping
 
 ## Contributing
 
@@ -118,6 +148,10 @@ python e2e.py
 3. Make your changes
 4. Run tests
 5. Submit a pull request
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for version details.
 
 ## License
 

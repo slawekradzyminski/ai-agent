@@ -1,31 +1,36 @@
 # Changelog
 
-This file contains only major changes to the project. For detailed changes, please refer to commit history.
+All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Added
-- Initial project setup with virtual environment and core dependencies
-- Created base project structure with src/ and tests/ directories
-- Implemented DuckDuckGo search tool integration
-- Added command-line interface with interactive mode
-- Added HTTP request tool for web requests
-- Implemented Selenium-based browser tool for web scraping
-- Added enhanced conversation memory with RAG-like functionality
-- Added comprehensive test suite including e2e tests
-- Added GitHub Actions workflow for running unit tests on Python 3.13
+## [0.2.0] - 2025-01-04
 
 ### Changed
-- Updated all dependencies to latest stable versions
-- Improved project documentation and structure
-- Enhanced browser tool with better content extraction
-- Improved memory system for better context handling
+- Migrated memory system to use latest LangChain patterns
+- Replaced deprecated `ConversationBufferMemory` with custom `ChatMessageHistory`
+- Updated agent executor to use `ainvoke` instead of deprecated `arun`
+- Improved chat history handling with proper message types
+- Fixed all tests to match new memory implementation
+
+### Added
+- New `ChatMessageHistory` class implementing `BaseChatMessageHistory`
+- Better message type handling with `HumanMessage` and `AIMessage`
+- Improved error handling and logging
 
 ### Removed
-- Removed redundant code and test files
-- Removed log files from version control
+- Deprecated memory components and patterns
+- Legacy conversation buffer implementation
 
-### Fixed
-- Fixed major package conflicts and import issues
-- Fixed content extraction and memory handling
-- Fixed async handling in CLI command processing 
+## [0.1.0] - 2025-01-03
+
+### Added
+- Initial release
+- Chat interaction using OpenAI's language models
+- Web search using DuckDuckGo
+- HTTP requests to fetch web content
+- Browser-based web scraping with Chrome
+- Interactive command-line interface
+- Conversation history tracking
+- Modular command handling system 

@@ -19,3 +19,4 @@ pytest-cov
 responses
 selenium>=4.15.2
 beautifulsoup4>=4.12.2
+tiktoken>=0.5.2
