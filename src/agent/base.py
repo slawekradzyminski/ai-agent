@@ -1,194 +1,115 @@
-"""Base agent implementation."""
-import json
-import uuid
-from typing import List, Optional, Dict, Any, Tuple
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import SystemMessage, HumanMessage, AIMessage, BaseMessage
-from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import BaseMessage
-from langchain_core.chat_history import BaseChatMessageHistory
+"""Base agent module."""
+import logging
+from typing import List, Dict, Any, Optional, Tuple
+from pydantic import BaseModel, Field, ConfigDict
 from langchain_openai import ChatOpenAI
-from langchain.tools import Tool, StructuredTool
-from src.config.settings import OPENAI_API_KEY, AGENT_MODEL, AGENT_TEMPERATURE
-from src.tools.search import SearchTool
-from src.tools.httprequest import HTTPRequestTool
+from langchain.agents import create_openai_functions_agent
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain.agents.agent import AgentExecutor
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.tools.browser import BrowserTool
-from src.memory.memory import Memory, ToolMemory
-from src.config.logging_config import request_logger
-from datetime import datetime
+from src.tools.search import SearchTool
+from src.tools.http import HttpTool
+from src.memory.memory import Memory
 
-class ChatMessageHistory(BaseChatMessageHistory):
-    """Chat message history that stores messages in memory."""
+logger = logging.getLogger(__name__)
+
+class Agent(BaseModel):
+    """AI agent that can use tools to accomplish tasks."""
     
-    def __init__(self):
-        self.messages: List[BaseMessage] = []
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
-    def add_message(self, message: BaseMessage) -> None:
-        """Add a message to the history."""
-        self.messages.append(message)
+    openai_api_key: str = Field(..., description="OpenAI API key")
+    memory: Memory = Field(default_factory=Memory)
+    llm: Optional[ChatOpenAI] = None
+    agent_executor: Optional[AgentExecutor] = None
+    tools: List[Any] = Field(default_factory=list)
     
-    def clear(self) -> None:
-        """Clear the message history."""
-        self.messages = []
+    def __init__(self, openai_api_key: str, **kwargs):
+        """Initialize the agent with tools and memory."""
+        super().__init__(openai_api_key=openai_api_key, **kwargs)
+        self.setup_agent()
+        logger.info("Agent initialized successfully")
 
-class Agent:
-    """Base agent class with autonomous tool selection and execution."""
-
-    def __init__(self):
-        """Initialize the agent with necessary tools and models."""
-        self.memory = Memory()
-        self._recent_tool_memories: List[ToolMemory] = []
-        self.chat_history = ChatMessageHistory()
-        
-        # Initialize tools
-        self.search_tool = SearchTool()
-        self.http_tool = HTTPRequestTool()
-        self.browser_tool = BrowserTool()
-        
-        # Create Langchain tools
-        self.tools = [
-            Tool(
-                name="web_search",
-                description="Search the web using DuckDuckGo. Use this when you need to find general information about a topic.",
-                func=self.search_tool.search_web,
-                return_direct=False
-            ),
-            Tool(
-                name="http_request",
-                description="Make an HTTP request to a URL. Use this when you have a specific URL and want to get its content, especially for APIs or structured data.",
-                func=self.http_tool.request,
-                return_direct=False
-            ),
-            Tool(
-                name="browser",
-                description="Get content from a webpage using Chrome browser. Use this when you need to extract content from a webpage, especially for JavaScript-rendered content.",
-                func=self.browser_tool.get_page_content,
-                return_direct=False
-            )
-        ]
-        
-        # Initialize Langchain components
-        self.llm = ChatOpenAI(
-            model=AGENT_MODEL,
-            temperature=AGENT_TEMPERATURE,
-            api_key=OPENAI_API_KEY
-        )
-        
-        # Create the agent with updated pattern
-        system_message = SystemMessage(content="""You are a helpful AI assistant with access to various tools for retrieving information.
-When using tools:
-1. Choose the most appropriate tool for the task
-2. Use web_search for general information gathering
-3. Use browser for detailed webpage content extraction
-4. Use http_request for API calls or when you have a specific URL
-5. Cite sources when referencing information
-6. Be clear about what information comes from tools vs. your knowledge
-Be thorough yet concise.""")
-        
-        prompt = ChatPromptTemplate.from_messages([
-            system_message,
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("user", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ])
-        
-        self._agent = create_openai_functions_agent(
-            llm=self.llm,
-            tools=self.tools,
-            prompt=prompt
-        )
-        
-        self._agent_executor = AgentExecutor(
-            agent=self._agent,
-            tools=self.tools,
-            verbose=True,
-            handle_parsing_errors=True,
-            return_intermediate_steps=True
-        )
-        
-        self.request_logger = request_logger
-        
-    @property
-    def agent(self):
-        """Get the agent instance."""
-        return self._agent
-        
-    @property
-    def agent_executor(self):
-        """Get the agent executor instance."""
-        return self._agent_executor
-
-    async def process_message(
-        self,
-        message: str,
-        system_prompt: Optional[str] = None
-    ) -> str:
-        """
-        Process a user message and return a response.
-        
-        Args:
-            message: User's input message
-            system_prompt: Optional system prompt to guide the agent's behavior
-            
-        Returns:
-            Agent's response as a string
-        """
-        request_id = str(uuid.uuid4())
-        
+    def setup_agent(self):
+        """Set up the agent with tools and LLM."""
         try:
-            # Add user message to chat history
-            self.chat_history.add_message(HumanMessage(content=message))
-            
-            # Let the agent decide which tools to use and execute them
-            result = await self.agent_executor.ainvoke(
-                {
-                    "input": message,
-                    "chat_history": self.chat_history.messages
-                },
-                {"request_id": request_id}
+            self.llm = ChatOpenAI(
+                temperature=0,
+                model="gpt-4",
+                openai_api_key=self.openai_api_key
             )
             
-            response = result["output"]
+            # Initialize tools
+            self.tools = [
+                SearchTool(),
+                BrowserTool(),
+                HttpTool()
+            ]
             
-            # Add assistant response to chat history
-            self.chat_history.add_message(AIMessage(content=response))
+            # Create the agent prompt
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are a helpful AI assistant that can use tools to accomplish tasks. When using tools, always try to extract the most relevant information and present it clearly to the user. You have access to the conversation history and the history of tool outputs to help provide context-aware responses."),
+                MessagesPlaceholder(variable_name="chat_history"),
+                MessagesPlaceholder(variable_name="tool_history"),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad")
+            ])
             
-            # Log the response
-            request_logger.info(
-                "Agent Response",
-                extra={
-                    'agent_response': {
-                        'id': request_id,
-                        'message': message,
-                        'response': response,
-                        'timestamp': datetime.now().isoformat()
-                    }
-                }
+            # Create the agent
+            agent = create_openai_functions_agent(
+                llm=self.llm,
+                tools=self.tools,
+                prompt=prompt
             )
             
-            # Store in memory
-            self.memory.add_conversation_memory(
-                role="assistant",
-                content=response,
-                related_tool_outputs=self._recent_tool_memories
+            # Create the agent executor with our custom memory
+            self.agent_executor = AgentExecutor(
+                agent=agent,
+                tools=self.tools,
+                memory=self.memory,
+                verbose=True,
+                handle_parsing_errors=True
             )
-            
-            # Clear recent tool memories
-            self._recent_tool_memories = []
-            
-            return response
             
         except Exception as e:
-            request_logger.error(
-                "Agent Error",
-                extra={
-                    'agent_error': {
-                        'id': request_id,
-                        'error_type': type(e).__name__,
-                        'error_message': str(e),
-                        'timestamp': datetime.now().isoformat()
-                    }
+            logger.error(f"Error setting up agent: {str(e)}")
+            raise
+
+    async def process_message(self, message: str) -> str:
+        """Process a user message and return the response."""
+        try:
+            # Process the message
+            response = await self.agent_executor.ainvoke(
+                {
+                    "input": message
                 }
             )
-            raise 
+            
+            output = response.get("output", "An error occurred while processing your request.")
+            return output
+            
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            return f"An error occurred: {str(e)}"
+
+    async def search(self, query: str) -> List[Dict[str, Any]]:
+        """Perform a web search using the SearchTool."""
+        search_tool = next(tool for tool in self.tools if isinstance(tool, SearchTool))
+        result = await search_tool._arun(query)
+        self.memory.add_tool_memory("search", query, str(result))
+        return result
+
+    async def get_page_content(self, url: str) -> Dict[str, Any]:
+        """Get web page content using the BrowserTool."""
+        browser_tool = next(tool for tool in self.tools if isinstance(tool, BrowserTool))
+        result = await browser_tool._arun(url)
+        self.memory.add_tool_memory("browser", url, str(result))
+        return result
+
+    async def make_http_request(self, url: str) -> str:
+        """Make an HTTP request using the HttpTool."""
+        http_tool = next(tool for tool in self.tools if isinstance(tool, HttpTool))
+        result = await http_tool._arun(url)
+        self.memory.add_tool_memory("http", url, str(result))
+        return result 

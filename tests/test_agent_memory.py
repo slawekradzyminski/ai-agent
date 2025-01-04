@@ -1,8 +1,7 @@
-"""Tests for agent memory functionality."""
+"""Test agent memory integration."""
 import pytest
 from unittest.mock import patch, Mock, AsyncMock
 from src.agent.base import Agent
-from src.memory.memory import Memory
 
 @pytest.fixture
 def agent():
@@ -11,61 +10,67 @@ def agent():
          patch('selenium.webdriver.chrome.options.Options') as mock_options, \
          patch('selenium.webdriver.Chrome') as mock_driver, \
          patch('selenium.webdriver.support.ui.WebDriverWait') as mock_wait, \
-         patch('langchain.agents.create_openai_functions_agent') as mock_create_agent:
+         patch('langchain.agents.create_openai_functions_agent') as mock_create_agent, \
+         patch('langchain.agents.agent.AgentExecutor') as mock_executor:
         
         # Mock the agent creation
         mock_agent = Mock()
         mock_create_agent.return_value = mock_agent
         
-        agent_instance = Agent()
+        # Mock the executor
+        mock_executor_instance = AsyncMock()
+        mock_executor_instance.ainvoke.return_value = {"output": "test response"}
+        mock_executor.return_value = mock_executor_instance
         
-        # Mock the agent executor after initialization
-        mock_executor = AsyncMock()
-        mock_executor.ainvoke = AsyncMock(return_value={"output": "Test response"})
-        agent_instance._agent_executor = mock_executor
-        
+        agent_instance = Agent(openai_api_key="test-key")
         return agent_instance
 
 @pytest.mark.asyncio
 async def test_browser_content_memory_storage(agent):
-    """Test storing browser content in memory."""
-    # Mock browser content
-    mock_content = "Test webpage content"
-    agent.browser_tool.get_page_content = Mock(return_value=mock_content)
+    """Test that browser content is stored in memory."""
+    # Mock browser tool to return test content
+    browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
+    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
     
-    # Use the tool via agent
-    response = await agent.process_message("Show me content from https://test.com")
+    await agent.get_page_content("test.com")
     
-    # Verify memory storage
-    assert len(agent.memory.conversation_history) > 0
-    assert response == "Test response"
+    # Check that tool output is stored
+    assert len(agent.memory.tool_outputs) == 1
+    assert agent.memory.tool_outputs[0].tool_name == "browser"
+    assert agent.memory.tool_outputs[0].input == "test.com"
+    assert "test content" in agent.memory.tool_outputs[0].output
 
 @pytest.mark.asyncio
 async def test_browser_content_in_message_context(agent):
-    """Test browser content is included in message context."""
-    # Mock browser content
-    mock_content = "Test webpage content"
-    agent.browser_tool.get_page_content = Mock(return_value=mock_content)
+    """Test that browser content is included in message context."""
+    # Mock browser tool to return test content
+    browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
+    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
     
-    # First message to store content
-    await agent.process_message("Show me content from https://test.com")
+    await agent.get_page_content("test.com")
+    await agent.process_message("What did you find?")
     
-    # Second message to verify context
-    response = await agent.process_message("What was in the previous content?")
-    
-    assert response == "Test response"
-    assert len(agent.memory.conversation_history) > 1
+    # Check that tool output is included in context
+    tool_outputs = agent.memory.get_relevant_tool_outputs("What did you find?")
+    assert len(tool_outputs) == 1
+    assert tool_outputs[0]["tool"] == "browser"
+    assert "test content" in tool_outputs[0]["output"]
 
 @pytest.mark.asyncio
 async def test_multiple_tool_outputs_in_context(agent):
-    """Test multiple tool outputs are stored and accessible."""
-    # Mock tool outputs
-    agent.search_tool.search_web = Mock(return_value=[{"title": "Test", "link": "https://test.com"}])
-    agent.browser_tool.get_page_content = Mock(return_value="Test content")
-    agent.http_tool.request = Mock(return_value={"status": "ok", "data": "Test data"})
+    """Test that multiple tool outputs are included in context."""
+    # Mock tools to return test content
+    browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
+    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
     
-    # Use multiple tools via agent
-    response = await agent.process_message("Search and show me test.com")
+    search_tool = next(tool for tool in agent.tools if tool.name == "search")
+    search_tool._arun = AsyncMock(return_value=["search result 1", "search result 2"])
     
-    assert response == "Test response"
-    assert len(agent.memory.conversation_history) > 0 
+    # Use both tools
+    await agent.get_page_content("test.com")
+    await agent.search("test query")
+    
+    # Check that both tool outputs are stored
+    assert len(agent.memory.tool_outputs) == 2
+    assert any(output.tool_name == "browser" for output in agent.memory.tool_outputs)
+    assert any(output.tool_name == "search" for output in agent.memory.tool_outputs) 

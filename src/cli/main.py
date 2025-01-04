@@ -1,87 +1,94 @@
-"""Main CLI module."""
-import asyncio
+"""Command line interface for the AI agent."""
+import sys
 import logging
-from typing import List, Optional
+import asyncio
+from typing import Optional
 from src.agent.base import Agent
-from src.cli.handlers.search import SearchHandler
-from src.cli.handlers.http import HttpHandler
-from src.cli.handlers.browser import BrowserHandler
-from src.cli.handlers.base import BaseHandler
+from src.cli.handlers import SearchHandler, HttpHandler, BrowserHandler
+from src.config.settings import OPENAI_API_KEY
 
 logger = logging.getLogger(__name__)
 
 class AgentCLI:
-    """Command-line interface for the AI agent."""
-
+    """Command line interface for interacting with the AI agent."""
+    
     def __init__(self):
-        """Initialize the CLI with an agent and command handlers."""
-        logger.info("Initializing AgentCLI")
-        self.agent = Agent()
-        self.handlers: List[BaseHandler] = [
+        """Initialize the CLI with handlers."""
+        if not OPENAI_API_KEY:
+            print("Error: OPENAI_API_KEY is not set in settings.py or .env file")
+            sys.exit(1)
+            
+        self.agent = Agent(openai_api_key=OPENAI_API_KEY)
+        self.handlers = [
             SearchHandler(self.agent),
             HttpHandler(self.agent),
             BrowserHandler(self.agent)
         ]
 
-    async def process_single_message(self, message: str):
-        """Process a single message in non-interactive mode."""
-        logger.info(f"Processing single message: {message}")
+    def show_help(self):
+        """Show help message."""
+        print("\nAvailable commands:")
+        print("  search <query> - Search the web")
+        print("  http <url> - Make an HTTP request")
+        print("  browser <url> - Browse a webpage")
+        print("  help - Show this help message")
+        print("  exit - Exit the program")
+        print("\nOr just type your message to chat with the agent.\n")
 
-        # Try handlers first
-        for handler in self.handlers:
-            if handler.can_handle(message):
-                result = await handler.handle(message)
-                if isinstance(handler, SearchHandler):
-                    print(handler.format_results(result))
-                elif isinstance(handler, HttpHandler):
-                    print(handler.format_result(result))
-                elif isinstance(handler, BrowserHandler):
-                    print(handler.format_result(result))
-                return
-
-        # If no handler matched, treat as chat
-        response = await self.agent.process_message(message)
-        print(f"\nAssistant: {response}")
+    async def process_single_message(self, message: str) -> Optional[str]:
+        """Process a single message and return the response."""
+        try:
+            # Check for special commands
+            if message.lower() == "help":
+                self.show_help()
+                return None
+                
+            if message.lower() == "exit":
+                return "exit"
+            
+            # Try each handler
+            for handler in self.handlers:
+                if handler.can_handle(message):
+                    return await handler.handle(message)
+            
+            # If no handler matches, treat as chat
+            return await self.agent.process_message(message)
+            
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            return f"An error occurred: {str(e)}"
 
     async def interactive_mode(self):
         """Run the CLI in interactive mode."""
-        print("\nAI Agent CLI")
-        print("===========")
-        self._show_help()
-
-        try:
-            while True:
+        print("AI Agent CLI")
+        print('Type "help" for available commands or "exit" to quit')
+        
+        while True:
+            try:
                 message = input("\nYou: ").strip()
                 
                 if not message:
                     continue
                     
-                if message.lower() == "exit":
-                    print("\nGoodbye!")
+                response = await self.process_single_message(message)
+                
+                if response == "exit":
                     break
                     
-                if message.lower() == "help":
-                    self._show_help()
-                    continue
-                
-                await self.process_single_message(message)
-                
-        except KeyboardInterrupt:
-            print("\nGoodbye!")
-        except Exception as e:
-            logger.error(f"Error in interactive mode: {str(e)}")
-            print(f"\nError: {str(e)}")
+                if response:
+                    print(f"\nAgent: {response}")
+                    
+            except KeyboardInterrupt:
+                print("\nExiting...")
+                break
+            except Exception as e:
+                logger.error(f"Error in interactive mode: {str(e)}")
+                print(f"\nAn error occurred: {str(e)}")
 
-    def _show_help(self):
-        """Show help information."""
-        print("\nAvailable commands:")
-        print("  search: <query>     - Search the web")
-        print("  http: <url>         - Make an HTTP request")
-        print("  browser: <url>      - Get content from a webpage")
-        print("  help                - Show this help message")
-        print("  exit                - Exit the program")
-        print("\nOr just type your message to chat with the AI assistant.")
+def main():
+    """Main entry point."""
+    cli = AgentCLI()
+    asyncio.run(cli.interactive_mode())
 
 if __name__ == "__main__":
-    cli = AgentCLI()
-    asyncio.run(cli.interactive_mode()) 
+    main() 

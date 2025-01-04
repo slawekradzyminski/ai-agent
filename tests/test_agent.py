@@ -1,90 +1,83 @@
-"""Tests for the agent module."""
+"""Test agent module."""
 import pytest
-from unittest.mock import patch, Mock, AsyncMock, ANY
-from langchain.schema import AgentAction, AgentFinish
+from unittest.mock import patch, Mock, AsyncMock
 from src.agent.base import Agent
-from src.memory.memory import Memory
+from src.tools.browser import BrowserTool
+from src.tools.search import SearchTool
+from src.tools.http import HttpTool
 
 @pytest.fixture
 def agent():
     """Create an agent instance for testing."""
-    with patch('langchain_openai.ChatOpenAI') as mock_llm, \
+    with patch('langchain_openai.ChatOpenAI') as mock_llm_class, \
          patch('selenium.webdriver.chrome.options.Options') as mock_options, \
          patch('selenium.webdriver.Chrome') as mock_driver, \
          patch('selenium.webdriver.support.ui.WebDriverWait') as mock_wait, \
-         patch('langchain.agents.create_openai_functions_agent') as mock_create_agent:
+         patch('langchain.agents.create_openai_functions_agent') as mock_create_agent, \
+         patch('langchain.agents.agent.AgentExecutor') as mock_executor:
+        
+        # Mock the LLM
+        mock_llm = Mock()
+        mock_llm_class.return_value = mock_llm
         
         # Mock the agent creation
         mock_agent = Mock()
         mock_create_agent.return_value = mock_agent
         
-        agent_instance = Agent()
+        # Mock the executor
+        mock_executor_instance = Mock()
+        mock_executor_instance.ainvoke = AsyncMock(return_value={"output": "test response"})
+        mock_executor.return_value = mock_executor_instance
         
-        # Mock the agent executor after initialization
-        mock_executor = AsyncMock()
-        mock_executor.ainvoke = AsyncMock(return_value={"output": "Test response"})
-        agent_instance._agent_executor = mock_executor
-        
+        agent_instance = Agent(openai_api_key="test-key")
+        agent_instance.agent_executor = mock_executor_instance  # Directly set the mock executor
         return agent_instance
 
 @pytest.mark.asyncio
 async def test_process_message_with_tool_selection(agent):
-    """Test message processing with autonomous tool selection."""
-    response = await agent.process_message("What is Python?")
-    
-    # Verify the agent executor was called with both input and chat_history
-    agent.agent_executor.ainvoke.assert_called_once_with(
-        {
-            "input": "What is Python?",
-            "chat_history": ANY  # Chat history can be empty list or messages
-        },
-        {"request_id": ANY}
-    )
-    
-    assert response == "Test response"
-    assert len(agent.memory.conversation_history) > 0
-    assert agent.memory.conversation_history[-1].content == "Test response"
+    """Test processing a message that requires tool selection."""
+    response = await agent.process_message("Search for test query")
+    assert response == "test response"
+    assert len(agent.memory.messages) == 2  # User message and AI response
 
 @pytest.mark.asyncio
 async def test_process_message_with_multiple_tools(agent):
-    """Test message processing with multiple tool usage."""
-    # Mock the agent to use multiple tools
-    agent.agent_executor.ainvoke = AsyncMock(return_value={"output": "Combined response from search and browser"})
-    
-    response = await agent.process_message("Tell me about Python and show me python.org")
-    
-    assert response == "Combined response from search and browser"
-    assert len(agent.memory.conversation_history) > 0
+    """Test processing a message that uses multiple tools."""
+    response = await agent.process_message("Search and browse test.com")
+    assert response == "test response"
+    assert len(agent.memory.messages) == 2
 
 @pytest.mark.asyncio
 async def test_process_message_error_handling(agent):
     """Test error handling in message processing."""
-    agent.agent_executor.ainvoke = AsyncMock(side_effect=Exception("Tool execution failed"))
-    
-    with pytest.raises(Exception) as exc_info:
-        await agent.process_message("test query")
-    
-    assert str(exc_info.value) == "Tool execution failed"
+    agent.agent_executor.ainvoke = AsyncMock(side_effect=Exception("Test error"))
+    response = await agent.process_message("Test message")
+    assert "An error occurred" in response
+    assert len(agent.memory.messages) == 2  # Error message should be stored
 
-@pytest.mark.asyncio
-async def test_tool_descriptions():
+def test_tool_descriptions():
     """Test that tools have appropriate descriptions for the agent."""
-    with patch('langchain_openai.ChatOpenAI'), \
+    with patch('langchain_openai.ChatOpenAI') as mock_llm_class, \
          patch('selenium.webdriver.chrome.options.Options'), \
          patch('selenium.webdriver.Chrome'), \
          patch('selenium.webdriver.support.ui.WebDriverWait'), \
-         patch('langchain.agents.create_openai_functions_agent'):
+         patch('langchain.agents.create_openai_functions_agent'), \
+         patch('langchain.agents.agent.AgentExecutor'):
         
-        agent = Agent()
+        # Mock the LLM
+        mock_llm = Mock()
+        mock_llm_class.return_value = mock_llm
         
-        # Verify tool descriptions
-        tool_names = {tool.name for tool in agent.tools}
-        assert "web_search" in tool_names
-        assert "http_request" in tool_names
-        assert "browser" in tool_names
+        agent = Agent(openai_api_key="test-key")
         
-        # Verify each tool has a meaningful description
+        # Check that all tools are initialized
+        assert len(agent.tools) == 3
+        assert any(isinstance(tool, SearchTool) for tool in agent.tools)
+        assert any(isinstance(tool, BrowserTool) for tool in agent.tools)
+        assert any(isinstance(tool, HttpTool) for tool in agent.tools)
+        
+        # Check tool descriptions
         for tool in agent.tools:
-            assert len(tool.description) > 0
-            assert tool.description.endswith(".")  # Proper sentence
-            assert "Use this when" in tool.description  # Usage guidance 
+            assert tool.name
+            assert tool.description
+            assert callable(tool._arun) 

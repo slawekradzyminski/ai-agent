@@ -18,7 +18,7 @@ class HttpHandler(BaseHandler):
         """Process the HTTP command and return result."""
         url = command[5:].strip()
         logger.info(f"Processing http request: {url}")
-        return await self.agent.http_request(url)
+        return await self.agent.make_http_request(url)
     
     def format_result(self, result: Dict[str, Any]) -> str:
         """Format HTTP result for display."""

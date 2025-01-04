@@ -1,126 +1,86 @@
-"""Memory module for storing conversation history and tool outputs."""
+"""Memory module for storing conversation and tool outputs."""
 import logging
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
-from datetime import datetime
+from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
+from langchain_core.memory import BaseMemory
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class ToolMemory:
-    """Memory entry for tool execution."""
+class ToolMemory(BaseModel):
+    """Memory for tool outputs."""
     tool_name: str
-    input_data: Dict[str, Any]
-    output_data: Any
-    timestamp: datetime
+    input: str
+    output: str
 
-@dataclass
-class ConversationMemory:
-    """Memory entry for conversation."""
-    role: str
-    content: str
-    timestamp: datetime
-    related_tool_outputs: List[ToolMemory]
+class Memory(BaseMemory):
+    """Memory for storing conversation history and tool outputs."""
+    
+    messages: List[BaseMessage] = Field(default_factory=list)
+    tool_outputs: List[ToolMemory] = Field(default_factory=list)
+    max_history: int = Field(default=10)
+    
+    @property
+    def memory_variables(self) -> List[str]:
+        """Return the memory variables."""
+        return ["chat_history", "tool_history"]
+    
+    def add_user_message(self, message: str) -> None:
+        """Add a user message to memory."""
+        self.messages.append(HumanMessage(content=message))
+        self._trim_history()
 
-class Memory:
-    """Memory management for the agent."""
+    def add_ai_message(self, message: str) -> None:
+        """Add an AI message to memory."""
+        self.messages.append(AIMessage(content=message))
+        self._trim_history()
 
-    def __init__(self, max_history: int = 100):
-        """Initialize memory with maximum history size."""
-        self.max_history = max_history
-        self.conversation_history: List[ConversationMemory] = []
-        self.tool_history: List[ToolMemory] = []
-
-    def add_tool_memory(self, tool_name: str, input_data: Dict[str, Any], output_data: Any) -> ToolMemory:
-        """
-        Add a tool execution to memory.
-
-        Args:
-            tool_name: Name of the tool used
-            input_data: Input parameters for the tool
-            output_data: Output from the tool execution
-
-        Returns:
-            The created ToolMemory entry
-        """
-        memory = ToolMemory(
-            tool_name=tool_name,
-            input_data=input_data,
-            output_data=output_data,
-            timestamp=datetime.now()
+    def add_tool_memory(self, tool_name: str, input: str, output: str) -> None:
+        """Add a tool output to memory."""
+        self.tool_outputs.append(
+            ToolMemory(tool_name=tool_name, input=input, output=output)
         )
-        self.tool_history.append(memory)
-        
-        # Trim history if needed
-        if len(self.tool_history) > self.max_history:
-            self.tool_history = self.tool_history[-self.max_history:]
-        
-        return memory
 
-    def add_conversation_memory(
-        self,
-        role: str,
-        content: str,
-        related_tool_outputs: Optional[List[ToolMemory]] = None
-    ) -> None:
-        """
-        Add a conversation entry to memory.
+    def get_conversation_context(self) -> List[BaseMessage]:
+        """Get the conversation context."""
+        return self.messages[-self.max_history:]
 
-        Args:
-            role: Role of the speaker (user/assistant)
-            content: Content of the message
-            related_tool_outputs: Optional list of related tool outputs
-        """
-        memory = ConversationMemory(
-            role=role,
-            content=content,
-            timestamp=datetime.now(),
-            related_tool_outputs=related_tool_outputs or []
-        )
-        self.conversation_history.append(memory)
-        
-        # Trim history if needed
-        if len(self.conversation_history) > self.max_history:
-            self.conversation_history = self.conversation_history[-self.max_history:]
-
-    def get_conversation_context(self, max_entries: Optional[int] = None) -> str:
-        """
-        Get formatted conversation history for context.
-
-        Args:
-            max_entries: Optional maximum number of entries to include
-
-        Returns:
-            Formatted conversation history with tool outputs
-        """
-        history = self.conversation_history[-max_entries:] if max_entries else self.conversation_history
-        context_parts = []
-
-        for entry in history:
-            # Add the conversation message
-            context_parts.append(f"{entry.role}: {entry.content}")
+    def get_relevant_tool_outputs(self, query: str) -> List[BaseMessage]:
+        """Get tool outputs relevant to the query."""
+        if not self.tool_outputs:
+            return []
             
-            # Add any related tool outputs
-            for tool in entry.related_tool_outputs:
-                context_parts.append(
-                    f"[Tool Output - {tool.tool_name}]\n"
-                    f"Input: {tool.input_data}\n"
-                    f"Output: {tool.output_data}"
-                )
-        
-        return "\n\n".join(context_parts)
+        # Format tool outputs as system messages
+        tool_messages = []
+        for memory in self.tool_outputs:
+            content = (
+                f"Previous tool usage - {memory.tool_name}:\n"
+                f"Input: {memory.input}\n"
+                f"Output: {memory.output}"
+            )
+            tool_messages.append(SystemMessage(content=content))
+        return tool_messages
 
-    def get_relevant_tool_outputs(self, query: str, max_results: int = 5) -> List[ToolMemory]:
-        """
-        Get tool outputs relevant to a query.
+    def _trim_history(self) -> None:
+        """Trim history to max_history messages."""
+        if len(self.messages) > self.max_history:
+            self.messages = self.messages[-self.max_history:]
 
-        Args:
-            query: The query to match against
-            max_results: Maximum number of results to return
+    def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Load memory variables."""
+        return {
+            "chat_history": self.get_conversation_context(),
+            "tool_history": self.get_relevant_tool_outputs(inputs.get("input", ""))
+        }
 
-        Returns:
-            List of relevant tool outputs
-        """
-        # For now, return the most recent tool outputs
-        # TODO: Implement semantic search for better relevance
-        return self.tool_history[-max_results:] 
+    def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
+        """Save context from this conversation to buffer."""
+        if "input" in inputs:
+            self.add_user_message(inputs["input"])
+        if "output" in outputs:
+            self.add_ai_message(outputs["output"])
+
+    def clear(self) -> None:
+        """Clear memory contents."""
+        self.messages.clear()
+        self.tool_outputs.clear() 

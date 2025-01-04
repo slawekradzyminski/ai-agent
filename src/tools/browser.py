@@ -1,294 +1,106 @@
-"""Browser tool for fetching web page content."""
+"""Browser tool for fetching web content."""
 import logging
-import json
-import traceback
-import os
+from typing import Optional, Dict, Any, Literal
+from pydantic import Field
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from bs4 import BeautifulSoup
-from src.config.logging_config import request_logger
+from langchain.tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
-class BrowserTool:
-    """Tool for fetching web page content using Selenium."""
+class BrowserTool(BaseTool):
+    """Tool for browsing web pages using Selenium."""
+    
+    name: Literal["browser"] = Field(default="browser")
+    description: Literal["Browse web pages and extract their content"] = Field(default="Browse web pages and extract their content")
+    logger: logging.Logger = Field(default_factory=lambda: logging.getLogger(__name__))
+    mock_driver: Optional[Any] = Field(default=None, exclude=True)
 
-    def __init__(self, test_mode=False):
+    def __init__(self, **kwargs):
         """Initialize the browser tool."""
-        logger.info("Initializing BrowserTool")
-        self.test_mode = test_mode or os.getenv('PYTEST_CURRENT_TEST') is not None
-        self.mock_driver = None
+        super().__init__(**kwargs)
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Initializing BrowserTool")
 
     def set_mock_driver(self, mock_driver):
         """Set a mock driver for testing."""
         self.mock_driver = mock_driver
 
-    def _get_driver(self):
-        """Get a WebDriver instance, using mock in test mode."""
-        if self.test_mode:
-            if self.mock_driver is None:
-                # Create a basic mock if none provided
-                from unittest.mock import Mock
-                mock_driver = Mock()
-                mock_driver.page_source = "<html><body>Test content</body></html>"
-                mock_driver.title = "Test Page"
-                mock_driver.current_url = "http://test.com"
-                self.mock_driver = mock_driver
-            return self.mock_driver
-        
-        # Set up Chrome options for real browser
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        return webdriver.Chrome(options=chrome_options)
-
     def _parse_html_content(self, html: str) -> str:
-        """
-        Parse HTML content and extract meaningful text.
-        
-        Args:
-            html: Raw HTML content to parse.
-            
-        Returns:
-            str: Cleaned and formatted text content.
-        """
-        # Parse HTML with BeautifulSoup
+        """Parse HTML content and extract relevant text."""
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Remove script, style, and other non-content elements
-        for element in soup(["script", "style", "meta", "link", "noscript", "header", "footer", "nav"]):
-            element.decompose()
+        # Remove script and style elements
+        for script in soup(["script", "style", "nav", "footer", "header", "menu"]):
+            script.decompose()
         
-        # Try to find the main content area using common patterns
+        # Try to find the main content
         main_content = None
         
-        # Look for article or main content by common class/id patterns
-        content_indicators = [
-            # Classes
-            {"class_": ["article", "post", "content", "main-content", "entry-content", "post-content"]},
-            # IDs
-            {"id": ["article", "post", "content", "main-content", "entry-content", "post-content"]},
-            # Tags
-            {"name": ["article", "main"]}
-        ]
-        
-        for indicator in content_indicators:
-            found = soup.find(**indicator)
-            if found:
-                main_content = found
-                break
-        
-        # If we found a main content area, use that
-        if main_content:
-            # Remove any remaining navigation/menu elements within the main content
-            for nav in main_content.find_all(class_=lambda x: x and any(term in str(x).lower() for term in ["menu", "nav", "sidebar", "footer"])):
-                nav.decompose()
-            
-            # Get text from main content
-            text = main_content.get_text(separator='\n', strip=True)
+        # Look for article or main tags first
+        if soup.find('article'):
+            main_content = soup.find('article')
+        elif soup.find('main'):
+            main_content = soup.find('main')
         else:
-            # Fallback: use the whole body but try to clean it up
-            body = soup.find('body')
-            if body:
-                # Remove elements likely to be navigation/menus/footers
-                for element in body.find_all(class_=lambda x: x and any(term in str(x).lower() for term in ["menu", "nav", "sidebar", "footer", "header"])):
-                    element.decompose()
-                text = body.get_text(separator='\n', strip=True)
-            else:
-                # Last resort: just get all text
-                text = soup.get_text(separator='\n', strip=True)
+            # Look for the largest content div
+            content_divs = soup.find_all('div', class_=lambda x: x and ('content' in x.lower() or 'article' in x.lower()))
+            if content_divs:
+                main_content = max(content_divs, key=lambda x: len(x.get_text()))
         
-        # Clean up text
-        lines = []
-        for line in text.splitlines():
-            line = line.strip()
-            # Skip empty lines and very short lines that are likely menu items
-            if line and len(line) > 3:
-                # Skip lines that look like navigation (short text with special characters)
-                if not (len(line) < 20 and any(char in line for char in ['»', '›', '|', '•', '>', '<'])):
-                    lines.append(line)
+        # If no main content found, use body
+        if not main_content:
+            main_content = soup.body
         
-        # Join lines, but add extra newline between paragraphs
-        text = '\n'.join(lines)
-        
-        # Remove redundant whitespace while preserving paragraph breaks
-        text = '\n'.join(line for line in text.splitlines() if line.strip())
-        
+        # Get text and clean it up
+        text = main_content.get_text(separator=' ', strip=True)
         return text
 
     def get_page_content(self, url: str) -> str:
-        """
-        Fetch content from a URL using Chrome WebDriver.
-        
-        Args:
-            url: The URL to fetch content from.
-            
-        Returns:
-            str: The parsed page content with only meaningful text.
-        """
-        # Log request initiation
-        request_logger.info(f"Browser request initiated to: {url}")
-        request_logger.debug(
-            "Browser request details",
-            extra={
-                'request': {
-                    'method': 'GET',
-                    'url': url,
-                    'tool': 'BrowserTool',
-                    'options': {
-                        'headless': True,
-                        'no-sandbox': True,
-                        'disable-dev-shm-usage': True
-                    }
-                }
-            }
-        )
-        
+        """Get the content of a web page."""
         driver = None
         try:
-            # Get the appropriate driver
-            driver = self._get_driver()
-            
-            # Create initialization record
-            init_record = logging.LogRecord(
-                name='ai_agent',
-                level=logging.DEBUG,
-                pathname=__file__,
-                lineno=0,
-                msg="Chrome WebDriver initialized",
-                args=(),
-                exc_info=None
-            )
-            init_record.extra = {
-                'browser_init': {
-                    'status': 'success',
-                    'options': ['--headless', '--no-sandbox', '--disable-dev-shm-usage'] if not self.test_mode else ['test_mode']
-                }
-            }
-            request_logger.handle(init_record)
-            
-            # Get the page
-            if not self.test_mode:
-                driver.get(url)
-                
-                try:
-                    # Wait for the page to load
-                    WebDriverWait(driver, 10).until(
-                        lambda d: d.execute_script('return document.readyState') == 'complete'
-                    )
-                except (TimeoutException, Exception) as e:
-                    error_msg = f"Page load timeout for {url}: {str(e)}"
-                    request_logger.error(
-                        "Browser Page Load Timeout",
-                        extra={
-                            'error_details': {
-                                'request': {
-                                    'url': url,
-                                    'tool': 'BrowserTool'
-                                },
-                                'error': {
-                                    'type': type(e).__name__,
-                                    'message': str(e),
-                                    'details': repr(e),
-                                    'traceback': traceback.format_exc()
-                                }
-                            }
-                        }
-                    )
-                    return ""
+            if self.mock_driver:
+                driver = self.mock_driver
+            else:
+                options = Options()
+                options.add_argument('--headless')
+                options.add_argument('--no-sandbox')
+                options.add_argument('--disable-dev-shm-usage')
+                driver = webdriver.Chrome(options=options)
 
-            # Get the page source
-            page_source = driver.page_source
+            driver.get(url)
+            wait = WebDriverWait(driver, 10)
+            wait.until(lambda d: d.execute_script('return document.readyState') == 'complete')
             
-            # Parse and clean the content
-            text = self._parse_html_content(page_source)
-            
-            # Create complete response record
-            response_record = logging.LogRecord(
-                name='ai_agent',
-                level=logging.DEBUG,
-                pathname=__file__,
-                lineno=0,
-                msg="Complete Browser Response",
-                args=(),
-                exc_info=None
-            )
-            response_record.extra = {
-                'request': {
-                    'method': 'GET',
-                    'url': url,
-                    'tool': 'BrowserTool'
-                },
-                'response': {
-                    'page_title': driver.title,
-                    'current_url': driver.current_url,
-                    'raw_html_length': len(page_source),
-                    'cleaned_text_length': len(text),
-                    'raw_html': page_source[:1000] + '...' if len(page_source) > 1000 else page_source,
-                    'cleaned_text': text
-                }
-            }
-            request_logger.handle(response_record)
-            
-            # Log summary at info level
-            request_logger.info(
-                f"Browser request completed: title='{driver.title}', "
-                f"content_length={len(text)} chars",
-                extra={
-                    'summary': {
-                        'request_url': url,
-                        'final_url': driver.current_url,
-                        'page_title': driver.title,
-                        'content_length': len(text)
-                    }
-                }
-            )
-            
-            return text
-            
-        except WebDriverException as e:
-            error_msg = f"Error fetching content from {url}: {str(e)}"
-            
-            # Log complete error details
-            request_logger.error(
-                "Browser Request Failed",
-                extra={
-                    'error_details': {
-                        'request': {
-                            'url': url,
-                            'tool': 'BrowserTool'
-                        },
-                        'error': {
-                            'type': type(e).__name__,
-                            'message': str(e),
-                            'details': repr(e),
-                            'traceback': traceback.format_exc()
-                        }
-                    }
-                }
-            )
+            content = self._parse_html_content(driver.page_source)
+            return content
+
+        except TimeoutException as e:
+            self.logger.error(f"Timeout while loading page {url}: {str(e)}")
             return ""
-            
+        except WebDriverException as e:
+            self.logger.error(f"WebDriver error for {url}: {str(e)}")
+            return ""
+        except Exception as e:
+            self.logger.error(f"Error getting content from {url}: {str(e)}")
+            return ""
         finally:
-            if driver and not self.test_mode:
+            if driver and not self.mock_driver:
                 try:
                     driver.quit()
                 except Exception as e:
-                    request_logger.error(
-                        "Browser cleanup failed",
-                        extra={
-                            'error_details': {
-                                'error': {
-                                    'type': type(e).__name__,
-                                    'message': str(e),
-                                    'details': repr(e),
-                                    'traceback': traceback.format_exc()
-                                }
-                            }
-                        }
-                    )
-                request_logger.debug("Browser session cleanup") 
+                    self.logger.error(f"Error closing browser: {str(e)}")
+
+    async def _arun(self, url: str) -> Dict[str, Any]:
+        """Run the browser tool asynchronously."""
+        content = self.get_page_content(url)
+        return {"url": url, "content": content}
+
+    def _run(self, url: str) -> Dict[str, Any]:
+        """Run the browser tool synchronously."""
+        return {"url": url, "content": self.get_page_content(url)} 
