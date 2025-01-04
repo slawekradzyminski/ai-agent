@@ -17,6 +17,7 @@ pytest-asyncio
 pytest-mock
 pytest-cov
 responses
+aioresponses>=0.7.5
 selenium>=4.15.2
 beautifulsoup4>=4.12.2
 tiktoken>=0.5.2

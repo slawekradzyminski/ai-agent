@@ -1,15 +1,17 @@
 """Search tool for performing web searches."""
 import logging
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from duckduckgo_search import DDGS
 from langchain.tools import BaseTool
 
+logger = logging.getLogger(__name__)
+
 class SearchTool(BaseTool):
     """Tool for performing web searches using DuckDuckGo."""
     
-    name: Literal["search"] = Field(default="search")
-    description: Literal["Search the web for information about a topic"] = Field(default="Search the web for information about a topic")
+    name: str = Field(default="search", description="The name of the tool")
+    description: str = Field(default="Search the web for information about a topic", description="The description of the tool")
     ddgs: Optional[DDGS] = Field(default_factory=DDGS)
     logger: logging.Logger = Field(default_factory=lambda: logging.getLogger(__name__))
 

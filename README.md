@@ -4,6 +4,8 @@ An AI agent with web search and HTTP request capabilities, built with LangChain 
 
 ## Features
 
+- Autonomous tool selection and execution based on context
+- Advanced memory system with proper conversation and tool output storage
 - Chat interaction using OpenAI's language models
 - Web search using DuckDuckGo
 - HTTP requests to fetch web content
@@ -11,7 +13,6 @@ An AI agent with web search and HTTP request capabilities, built with LangChain 
 - Interactive command-line interface
 - Advanced conversation history with LangChain's latest patterns
 - Modular command handling system
-- Autonomous tool selection based on context
 - Proper error handling and logging
 
 ## Installation
@@ -127,6 +128,7 @@ The agent uses LangChain's latest patterns for:
 - Advanced conversation history management
 - Proper message type handling
 - Error handling and logging
+- Intelligent context building for responses
 
 ### Memory System
 
@@ -134,6 +136,8 @@ Uses LangChain's latest memory patterns:
 - Custom `ChatMessageHistory` implementation
 - Proper message type handling with `HumanMessage` and `AIMessage`
 - Efficient conversation history management
+- Tool output storage and retrieval
+- Context-aware response generation
 
 ### Tools
 

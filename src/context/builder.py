@@ -51,14 +51,16 @@ def score_content_relevance(query: str, content: str) -> float:
     return overlap / len(query_words)
 
 def format_tool_context(tool_outputs: List[Dict[str, Any]]) -> str:
-    """Format tool outputs into a readable context string."""
+    """Format tool outputs into a context string."""
     if not tool_outputs:
-        return "No relevant tool outputs found."
-    
-    context_parts = []
+        return ""
+        
+    formatted_outputs = []
     for output in tool_outputs:
-        context_parts.append(f"[Tool: {output['tool']}]")
-        context_parts.append(f"Input: {output['input']}")
-        context_parts.append(f"Output: {output['output']}\n")
+        formatted_outputs.append(
+            f"Tool: {output['tool']}\n"
+            f"Input: {output['input']}\n"
+            f"Output: {output['output']}"
+        )
     
-    return "\n".join(context_parts) 
+    return "\n\n".join(formatted_outputs) 

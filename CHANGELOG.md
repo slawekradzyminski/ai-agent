@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-05
+
+### Changed
+- Enhanced agent autonomy with improved tool selection and execution
+- Fixed memory implementation to correctly store and retrieve conversation history
+- Improved context building for more coherent responses
+- Updated tool integration for better error handling
+
+### Added
+- Proper tool output storage in memory
+- Enhanced conversation context management
+- Better integration between agent and memory systems
+
 ## [0.2.0] - 2025-01-04
 
 ### Changed

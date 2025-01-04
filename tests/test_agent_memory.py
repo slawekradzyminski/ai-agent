@@ -13,11 +13,8 @@ def agent():
          patch('langchain.agents.create_openai_functions_agent') as mock_create_agent, \
          patch('langchain.agents.agent.AgentExecutor') as mock_executor:
         
-        # Mock the agent creation
         mock_agent = Mock()
         mock_create_agent.return_value = mock_agent
-        
-        # Mock the executor
         mock_executor_instance = AsyncMock()
         mock_executor_instance.ainvoke.return_value = {"output": "test response"}
         mock_executor.return_value = mock_executor_instance

@@ -45,21 +45,17 @@ class Memory(BaseMemory):
         """Get the conversation context."""
         return self.messages[-self.max_history:]
 
-    def get_relevant_tool_outputs(self, query: str) -> List[BaseMessage]:
+    def get_relevant_tool_outputs(self, query: str) -> List[Dict[str, Any]]:
         """Get tool outputs relevant to the query."""
-        if not self.tool_outputs:
-            return []
-            
-        # Format tool outputs as system messages
-        tool_messages = []
-        for memory in self.tool_outputs:
-            content = (
-                f"Previous tool usage - {memory.tool_name}:\n"
-                f"Input: {memory.input}\n"
-                f"Output: {memory.output}"
-            )
-            tool_messages.append(SystemMessage(content=content))
-        return tool_messages
+        # For now, return all tool outputs in a format matching the tests
+        return [
+            {
+                "tool": memory.tool_name,
+                "input": memory.input,
+                "output": memory.output
+            }
+            for memory in self.tool_outputs
+        ]
 
     def _trim_history(self) -> None:
         """Trim history to max_history messages."""
@@ -68,9 +64,19 @@ class Memory(BaseMemory):
 
     def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Load memory variables."""
+        tool_outputs = self.get_relevant_tool_outputs(inputs.get("input", ""))
+        tool_messages = []
+        for output in tool_outputs:
+            content = (
+                f"Previous tool usage - {output['tool']}:\n"
+                f"Input: {output['input']}\n"
+                f"Output: {output['output']}"
+            )
+            tool_messages.append(SystemMessage(content=content))
+            
         return {
             "chat_history": self.get_conversation_context(),
-            "tool_history": self.get_relevant_tool_outputs(inputs.get("input", ""))
+            "tool_history": tool_messages
         }
 
     def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:

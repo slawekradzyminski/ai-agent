@@ -40,11 +40,11 @@ class Agent(BaseModel):
                 openai_api_key=self.openai_api_key
             )
             
-            # Initialize tools
+            # Initialize tools with properly formatted names
             self.tools = [
-                SearchTool(),
-                BrowserTool(),
-                HttpTool()
+                SearchTool(name="search"),
+                BrowserTool(name="browser"),
+                HttpTool(name="http")
             ]
             
             # Create the agent prompt
