@@ -1,6 +1,6 @@
 """Test CLI module."""
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 from src.cli.main import CLI
 
 @pytest.fixture
@@ -13,9 +13,10 @@ def mock_agent():
 @pytest.fixture
 def cli(mock_agent):
     """Create a CLI instance for testing."""
-    cli = CLI()
-    cli.agent = mock_agent
-    return cli
+    with patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}):
+        cli = CLI()
+        cli.agent = mock_agent
+        return cli
 
 @pytest.mark.asyncio
 async def test_process_command_help(cli):
