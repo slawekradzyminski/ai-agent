@@ -10,7 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.tools.browser import BrowserTool
 from src.tools.search import SearchTool
 from src.tools.http import HttpTool
-from src.memory.memory import Memory
+from src.memory.vector_memory import VectorMemory
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class Agent(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     openai_api_key: str = Field(..., description="OpenAI API key")
-    memory: Memory = Field(default_factory=Memory)
+    memory: VectorMemory = Field(default_factory=VectorMemory)
     llm: Optional[ChatOpenAI] = None
     agent_executor: Optional[AgentExecutor] = None
     tools: List[Any] = Field(default_factory=list)

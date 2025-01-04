@@ -17,4 +17,9 @@ class BaseHandler(ABC):
     @abstractmethod
     async def handle(self, command: str) -> Any:
         """Process the command and return the result."""
+        pass
+        
+    @abstractmethod
+    def get_help(self) -> str:
+        """Get help text for this handler's commands."""
         pass 

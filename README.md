@@ -5,7 +5,7 @@ An AI agent with web search and HTTP request capabilities, built with LangChain 
 ## Features
 
 - Autonomous tool selection and execution based on context
-- Advanced memory system with proper conversation and tool output storage
+- Vector-based memory system with semantic search capabilities
 - Chat interaction using OpenAI's language models
 - Web search using DuckDuckGo
 - HTTP requests to fetch web content
@@ -49,53 +49,18 @@ python -m src.cli.main
 ```
 
 Available commands:
-- `search: query` - Search the web using DuckDuckGo
-- `http: url` - Make an HTTP request to a URL
-- `browser: url` - Get page content using Chrome
+- `search <query>` or `search: <query>` - Search the web
+- `http <url>` or `http: <url>` - Make an HTTP request
+- `browser <url>` or `browser: <url>` - Browse a webpage
+- `memory documents` - Show stored documents
+- `memory metadata` - Show document metadata
+- `memory tools` - Show tool outputs
+- `memory messages` - Show conversation messages
+- `memory search <query>` - Search memory with semantic search
 - `help` - Show help message
 - `exit` - Exit the program
-- Any other text - Chat with the AI agent
 
-### Single Message Mode
-
-Send a single message:
-```bash
-python src/cli/main.py -m "your message here"
-```
-
-### Examples
-
-1. Web Search:
-```
-You: search: Python programming best practices
-```
-
-2. HTTP Request:
-```
-You: http: https://api.example.com/data
-```
-
-3. Browser Content:
-```
-You: browser: https://example.com
-```
-
-4. Chat:
-```
-You: What is the capital of France?
-```
-
-## Testing
-
-Run the test suite:
-```bash
-python -m pytest tests/
-```
-
-Run end-to-end tests:
-```bash
-python e2e.py
-```
+Or just type your message to chat with the agent.
 
 ## Project Structure
 
@@ -108,15 +73,17 @@ python e2e.py
       - `search.py` - Search command handler
       - `http.py` - HTTP command handler
       - `browser.py` - Browser command handler
+      - `memory.py` - Memory inspection handler
     - `main.py` - Main CLI entry point
   - `tools/` - Tool implementations (search, HTTP, browser)
   - `memory/` - Memory and chat history management
+    - `vector_memory.py` - Vector-based memory implementation
   - `config/` - Configuration management
 - `tests/` - Test suite
   - `cli/` - CLI-specific tests
   - `context/` - Context building tests
   - `test_agent.py` - Agent tests
-  - `test_memory.py` - Memory system tests
+  - `test_agent_memory.py` - Memory system tests
 - `e2e.py` - End-to-end tests
 
 ## Key Components
@@ -132,11 +99,11 @@ The agent uses LangChain's latest patterns for:
 
 ### Memory System
 
-Uses LangChain's latest memory patterns:
-- Custom `ChatMessageHistory` implementation
-- Proper message type handling with `HumanMessage` and `AIMessage`
-- Efficient conversation history management
-- Tool output storage and retrieval
+Uses vector-based memory with TF-IDF and cosine similarity:
+- Semantic search for relevant context retrieval
+- Efficient document and metadata storage
+- Tool output tracking and retrieval
+- Conversation history management
 - Context-aware response generation
 
 ### Tools

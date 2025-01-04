@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-06
+
+### Added
+- New `VectorMemory` implementation using TF-IDF and cosine similarity for semantic search
+- Memory inspection commands in CLI (`memory documents`, `memory metadata`, `memory tools`, `memory messages`, `memory search`)
+- Support for both space and colon command formats (e.g., `search query` or `search: query`)
+
+### Changed
+- Migrated from basic memory to vector-based memory system
+- Improved command handling with better separation of concerns
+- Enhanced test coverage for memory and CLI components
+- Unified command format handling across all handlers
+
+### Removed
+- Old memory implementation and its tests
+- Deprecated memory patterns and unused code
+
 ## [0.3.0] - 2025-01-05
 
 ### Changed

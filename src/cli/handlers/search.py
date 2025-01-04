@@ -8,44 +8,30 @@ logger = logging.getLogger(__name__)
 class SearchHandler(BaseHandler):
     """Handler for search commands."""
 
-    def can_handle(self, message: str) -> bool:
-        """Check if this handler can process the message."""
-        return message.lower().startswith("search:")
+    def can_handle(self, command: str) -> bool:
+        """Check if this handler can process the given command."""
+        command = command.lower()
+        return command.startswith("search ") or command.startswith("search:")
 
-    async def handle(self, message: str) -> List[Dict[str, Any]]:
-        """
-        Process a search command.
-
-        Args:
-            message: The search command message
-
-        Returns:
-            List of search results
-        """
-        # Extract query
-        query = message.replace("search:", "", 1).strip()
-        logger.info(f"Processing search request: {query}")
+    async def handle(self, command: str) -> List[Dict[str, Any]]:
+        """Process the search command and return the result."""
+        # Extract query after "search:" or "search "
+        if ":" in command:
+            query = command.split(":", 1)[1].strip()
+        else:
+            query = command[len("search "):].strip()
+            
+        if not query:
+            return self.get_help()
+            
+        return await self.agent.search(query)
         
-        try:
-            return await self.agent.search(query)
-        except Exception as e:
-            logger.error(f"Search failed: {str(e)}")
-            return [{"error": f"Search failed: {str(e)}"}]
-
     def format_results(self, results: List[Dict[str, Any]]) -> str:
-        """
-        Format search results for display.
-
-        Args:
-            results: List of search results to format
-
-        Returns:
-            Formatted string for display
-        """
+        """Format search results for display."""
         if not results:
             return "No results found"
             
-        if "error" in results[0]:
+        if isinstance(results, list) and len(results) > 0 and "error" in results[0]:
             return f"Error: {results[0]['error']}"
             
         output = []
@@ -56,4 +42,8 @@ class SearchHandler(BaseHandler):
             output.append(f"Link: {link}")
             output.append("")
             
-        return "\n".join(output) 
+        return "\n".join(output)
+        
+    def get_help(self) -> str:
+        """Get help text for search commands."""
+        return "- search <query>: Search the web for information" 

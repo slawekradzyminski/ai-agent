@@ -32,10 +32,11 @@ async def test_browser_content_memory_storage(agent):
     await agent.get_page_content("test.com")
     
     # Check that tool output is stored
-    assert len(agent.memory.tool_outputs) == 1
-    assert agent.memory.tool_outputs[0].tool_name == "browser"
-    assert agent.memory.tool_outputs[0].input == "test.com"
-    assert "test content" in agent.memory.tool_outputs[0].output
+    tool_outputs = agent.memory.get_relevant_tool_outputs("test.com")
+    assert len(tool_outputs) == 1
+    assert tool_outputs[0]["tool"] == "browser"
+    assert tool_outputs[0]["input"] == "test.com"
+    assert "test content" in tool_outputs[0]["output"]
 
 @pytest.mark.asyncio
 async def test_browser_content_in_message_context(agent):
@@ -68,6 +69,7 @@ async def test_multiple_tool_outputs_in_context(agent):
     await agent.search("test query")
     
     # Check that both tool outputs are stored
-    assert len(agent.memory.tool_outputs) == 2
-    assert any(output.tool_name == "browser" for output in agent.memory.tool_outputs)
-    assert any(output.tool_name == "search" for output in agent.memory.tool_outputs) 
+    tool_outputs = agent.memory.get_relevant_tool_outputs("")  # Empty query to get all outputs
+    assert len(tool_outputs) == 2
+    assert any(output["tool"] == "browser" for output in tool_outputs)
+    assert any(output["tool"] == "search" for output in tool_outputs) 
