@@ -18,7 +18,7 @@ class TestAgentCLI:
             mock_agent.make_http_request = AsyncMock()
             mock_agent.get_page_content = AsyncMock()
             mock_agent_class.return_value = mock_agent
-            cli = AgentCLI()
+            cli = AgentCLI(test_mode=True)
             return cli
     
     @pytest.mark.asyncio

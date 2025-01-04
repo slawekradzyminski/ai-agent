@@ -10,15 +10,15 @@ from src.config.settings import OPENAI_API_KEY
 logger = logging.getLogger(__name__)
 
 class AgentCLI:
-    """Command line interface for interacting with the AI agent."""
+    """Command-line interface for the AI agent."""
     
-    def __init__(self):
+    def __init__(self, test_mode=False):
         """Initialize the CLI with handlers."""
-        if not OPENAI_API_KEY:
+        if not OPENAI_API_KEY and not test_mode:
             print("Error: OPENAI_API_KEY is not set in settings.py or .env file")
             sys.exit(1)
             
-        self.agent = Agent(openai_api_key=OPENAI_API_KEY)
+        self.agent = Agent(openai_api_key=OPENAI_API_KEY or "test-key")
         self.handlers = [
             SearchHandler(self.agent),
             HttpHandler(self.agent),
