@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, Mock, AsyncMock
 from src.agent.base import Agent
+from langchain_core.callbacks import CallbackManagerForToolRun
 
 @pytest.fixture
 def agent():
@@ -27,8 +28,25 @@ async def test_browser_content_memory_storage(agent):
     """Test that browser content is stored in memory."""
     # Mock browser tool to return test content
     browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
-    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
     
+    # Create a mock callback manager
+    mock_callback_manager = Mock(spec=CallbackManagerForToolRun)
+    mock_callback_manager.on_tool_end = Mock()
+    
+    # Mock the tool's _arun method
+    async def mock_arun(url, run_manager=None, **kwargs):
+        result = {"content": "test content", "url": "test.com"}
+        if run_manager:
+            await run_manager.on_tool_end(
+                str(result),
+                tool_input=url,
+                tool_name="browser"
+            )
+        return result
+    
+    browser_tool._arun = mock_arun
+    
+    # Use the tool
     await agent.get_page_content("test.com")
     
     # Check that tool output is stored
@@ -43,8 +61,25 @@ async def test_browser_content_in_message_context(agent):
     """Test that browser content is included in message context."""
     # Mock browser tool to return test content
     browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
-    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
     
+    # Create a mock callback manager
+    mock_callback_manager = Mock(spec=CallbackManagerForToolRun)
+    mock_callback_manager.on_tool_end = Mock()
+    
+    # Mock the tool's _arun method
+    async def mock_arun(url, run_manager=None, **kwargs):
+        result = {"content": "test content", "url": "test.com"}
+        if run_manager:
+            await run_manager.on_tool_end(
+                str(result),
+                tool_input=url,
+                tool_name="browser"
+            )
+        return result
+    
+    browser_tool._arun = mock_arun
+    
+    # Use the tool and process a message
     await agent.get_page_content("test.com")
     await agent.process_message("What did you find?")
     
@@ -59,10 +94,36 @@ async def test_multiple_tool_outputs_in_context(agent):
     """Test that multiple tool outputs are included in context."""
     # Mock tools to return test content
     browser_tool = next(tool for tool in agent.tools if tool.name == "browser")
-    browser_tool._arun = AsyncMock(return_value={"content": "test content", "url": "test.com"})
-    
     search_tool = next(tool for tool in agent.tools if tool.name == "search")
-    search_tool._arun = AsyncMock(return_value=["search result 1", "search result 2"])
+    
+    # Create mock callback managers
+    mock_callback_manager = Mock(spec=CallbackManagerForToolRun)
+    mock_callback_manager.on_tool_end = Mock()
+    
+    # Mock the browser tool's _arun method
+    async def mock_browser_arun(url, run_manager=None, **kwargs):
+        result = {"content": "test content", "url": "test.com"}
+        if run_manager:
+            await run_manager.on_tool_end(
+                str(result),
+                tool_input=url,
+                tool_name="browser"
+            )
+        return result
+    
+    # Mock the search tool's _arun method
+    async def mock_search_arun(query, run_manager=None, **kwargs):
+        result = ["search result 1", "search result 2"]
+        if run_manager:
+            await run_manager.on_tool_end(
+                str(result),
+                tool_input=query,
+                tool_name="search"
+            )
+        return result
+    
+    browser_tool._arun = mock_browser_arun
+    search_tool._arun = mock_search_arun
     
     # Use both tools
     await agent.get_page_content("test.com")

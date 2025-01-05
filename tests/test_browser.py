@@ -36,10 +36,10 @@ def test_get_page_content_success(browser_tool, mock_selenium):
     mock_selenium['driver'].execute_script.return_value = 'complete'
     mock_selenium['driver'].title = 'Test Page'
     
-    content = browser_tool.get_page_content('http://test.com')
+    result = browser_tool.get_page_content('http://test.com')
     
-    assert 'Test content' in content
-    # No need to check quit() since we're in test mode
+    assert 'Test content' in result['content']
+    assert result['url'] == 'http://test.com'
 
 def test_get_page_content_timeout(browser_tool, mock_selenium):
     """Test handling of page load timeout."""
@@ -47,30 +47,30 @@ def test_get_page_content_timeout(browser_tool, mock_selenium):
     mock_selenium['driver'].page_source = ''
     mock_selenium['driver'].title = 'Test Page'
     
-    content = browser_tool.get_page_content('http://test.com')
+    result = browser_tool.get_page_content('http://test.com')
     
-    assert content == ''
-    # No need to check quit() since we're in test mode
+    assert result['content'] == ''
+    assert result['url'] == 'http://test.com'
 
 def test_get_page_content_driver_error(browser_tool, mock_selenium):
     """Test error handling in page content retrieval."""
     mock_selenium['driver'].get.side_effect = WebDriverException('Driver error')
     mock_selenium['driver'].page_source = ''
     
-    content = browser_tool.get_page_content('http://test.com')
+    result = browser_tool.get_page_content('http://test.com')
     
-    assert content == ''
-    # No need to check quit() since we're in test mode
+    assert result['content'] == ''
+    assert result['url'] == 'http://test.com'
 
 def test_get_page_content_cleanup_on_error(browser_tool, mock_selenium):
     """Test driver cleanup on page load error."""
     mock_selenium['driver'].get.side_effect = WebDriverException('Page load error')
     mock_selenium['driver'].page_source = ''
     
-    content = browser_tool.get_page_content('http://test.com')
+    result = browser_tool.get_page_content('http://test.com')
     
-    assert content == ''
-    # No need to check quit() since we're in test mode
+    assert result['content'] == ''
+    assert result['url'] == 'http://test.com'
 
 def test_get_page_content_cleanup_on_quit_error(browser_tool, mock_selenium):
     """Test driver cleanup on quit error."""
@@ -79,10 +79,10 @@ def test_get_page_content_cleanup_on_quit_error(browser_tool, mock_selenium):
     mock_selenium['driver'].title = 'Test Page'
     mock_selenium['driver'].quit.side_effect = Exception('Quit error')
     
-    content = browser_tool.get_page_content('http://test.com')
+    result = browser_tool.get_page_content('http://test.com')
     
-    assert 'Test content' in content
-    # No need to check quit() since we're in test mode
+    assert 'Test content' in result['content']
+    assert result['url'] == 'http://test.com'
 
 def test_parse_html_content_with_article(browser_tool):
     """Test HTML parsing with article tag."""
@@ -137,4 +137,5 @@ def test_parse_html_content_fallback(browser_tool):
     """
     content = browser_tool._parse_html_content(html)
     assert "Important text" in content
+    # Menu items should be filtered out
     assert "Menu items" not in content 

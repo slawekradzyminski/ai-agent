@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-01-07
+
+### Added
+- New `ToolOutputCallbackHandler` to capture and store tool outputs during autonomous agent usage
+- Enhanced logging in HTTP and Browser tools for better debugging
+- Improved error handling in browser and HTTP request operations
+
+### Changed
+- Modified `Agent` class to integrate tool output storage functionality
+- Updated test suite with new tests for callback handlers and tool output storage
+- Enhanced browser and HTTP tools with better error handling and logging
+
+### Fixed
+- Tool outputs are now properly stored in vector memory during autonomous agent usage
+- Improved handling of browser and HTTP requests with better error reporting
+
 ## [0.4.0] - 2025-01-06
 
 ### Added

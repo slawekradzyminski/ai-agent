@@ -1,7 +1,10 @@
 """HTTP command handler."""
 import json
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, Union
 from src.cli.handlers.base import BaseHandler
+
+logger = logging.getLogger(__name__)
 
 class HttpHandler(BaseHandler):
     """Handler for HTTP commands."""
@@ -20,17 +23,34 @@ class HttpHandler(BaseHandler):
             url = command[len("http "):].strip()
             
         if not url:
+            logger.warning("Empty URL provided")
             return self.get_help()
             
-        return await self.agent.make_http_request(url)
+        # Ensure URL has protocol
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url.lstrip('/')
+            
+        logger.info(f"Making HTTP request to URL: {url}")
+        result = await self.agent.make_http_request(url)
+        logger.info("Got response from agent")
+        return result
         
-    def format_result(self, result: Dict[str, Any]) -> str:
+    def format_result(self, result: Union[Dict[str, Any], str]) -> str:
         """Format HTTP result for display."""
-        if 'error' in result:
+        if isinstance(result, str):
+            try:
+                # Try to parse as JSON for better formatting
+                parsed = json.loads(result)
+                return "\nJSON Response\n" + "-" * 50 + "\n" + json.dumps(parsed, indent=2)
+            except json.JSONDecodeError:
+                # If not JSON, return as plain text
+                return "\nText Response\n" + "-" * 50 + "\n" + result
+                
+        if isinstance(result, dict) and 'error' in result:
             return f"\nError: {result['error']}"
         
         # Handle both old and new response formats
-        if 'status_code' in result:
+        if isinstance(result, dict) and 'status_code' in result:
             # New format with detailed response info
             output = [
                 f"\nStatus Code: {result['status_code']}",

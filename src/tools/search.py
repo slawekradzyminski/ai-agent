@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from duckduckgo_search import DDGS
 from langchain.tools import BaseTool
+from langchain_core.callbacks import CallbackManagerForToolRun, BaseCallbackHandler
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class SearchTool(BaseTool):
     description: str = Field(default="Search the web for information about a topic", description="The description of the tool")
     ddgs: Optional[DDGS] = Field(default_factory=DDGS)
     logger: logging.Logger = Field(default_factory=lambda: logging.getLogger(__name__))
+    callbacks: Optional[List[BaseCallbackHandler]] = Field(default=None, description="Callbacks for the tool")
 
     def __init__(self, **kwargs):
         """Initialize the search tool."""
@@ -32,9 +34,31 @@ class SearchTool(BaseTool):
             self.logger.error(f"Error during search: {str(e)}")
             return []
 
-    async def _arun(self, query: str) -> List[Dict[str, Any]]:
+    async def _arun(
+        self,
+        query: str,
+        run_manager: Optional[CallbackManagerForToolRun] = None,
+        **kwargs: Any
+    ) -> List[Dict[str, Any]]:
         """Run the search asynchronously."""
-        return self.search_web(query)
+        try:
+            results = self.search_web(query)
+            if run_manager:
+                try:
+                    # Convert results to a string representation for the callback
+                    output = "\n".join(f"{r['title']}: {r['body']}" for r in results)
+                    await run_manager.on_tool_end(
+                        output=output,
+                        tool_input=query,
+                        tool_name=self.name
+                    )
+                except Exception as e:
+                    self.logger.error(f"Error in callback: {str(e)}")
+                    # Continue even if callback fails
+            return results
+        except Exception as e:
+            self.logger.error(f"Error in _arun: {str(e)}")
+            raise
 
     def _run(self, query: str) -> List[Dict[str, Any]]:
         """Run the search tool synchronously."""

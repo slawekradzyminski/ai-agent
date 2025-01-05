@@ -49,5 +49,6 @@ async def test_request_error(http_tool):
     
     with aioresponses() as m:
         m.get(test_url, exception=aiohttp.ClientError())
-        with pytest.raises(Exception):
-            await http_tool._arun(test_url) 
+        response = await http_tool._arun(test_url)
+        assert isinstance(response, dict)
+        assert "error" in response 

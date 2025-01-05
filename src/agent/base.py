@@ -11,6 +11,7 @@ from src.tools.browser import BrowserTool
 from src.tools.search import SearchTool
 from src.tools.http import HttpTool
 from src.memory.vector_memory import VectorMemory
+from src.callbacks.tool_output import ToolOutputCallbackHandler
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,14 @@ class Agent(BaseModel):
     llm: Optional[ChatOpenAI] = None
     agent_executor: Optional[AgentExecutor] = None
     tools: List[Any] = Field(default_factory=list)
+    callbacks: List[Any] = Field(default_factory=list)
     
     def __init__(self, openai_api_key: str, **kwargs):
         """Initialize the agent with tools and memory."""
         super().__init__(openai_api_key=openai_api_key, **kwargs)
         self.setup_agent()
         logger.info("Agent initialized successfully")
-
+        
     def setup_agent(self):
         """Set up the agent with tools and LLM."""
         try:
@@ -40,11 +42,15 @@ class Agent(BaseModel):
                 openai_api_key=self.openai_api_key
             )
             
-            # Initialize tools with properly formatted names
+            # Create callback handler for tool output storage
+            callback_handler = ToolOutputCallbackHandler(self.memory)
+            self.callbacks = [callback_handler]
+            
+            # Initialize tools with properly formatted names and callbacks
             self.tools = [
-                SearchTool(name="search"),
-                BrowserTool(name="browser"),
-                HttpTool(name="http")
+                SearchTool(name="search", callbacks=[callback_handler]),
+                BrowserTool(name="browser", callbacks=[callback_handler]),
+                HttpTool(name="http", callbacks=[callback_handler])
             ]
             
             # Create the agent prompt
@@ -63,19 +69,20 @@ class Agent(BaseModel):
                 prompt=prompt
             )
             
-            # Create the agent executor with our custom memory
+            # Create the agent executor with our custom memory and callbacks
             self.agent_executor = AgentExecutor(
                 agent=agent,
                 tools=self.tools,
                 memory=self.memory,
                 verbose=True,
-                handle_parsing_errors=True
+                handle_parsing_errors=True,
+                callbacks=self.callbacks
             )
             
         except Exception as e:
             logger.error(f"Error setting up agent: {str(e)}")
             raise
-
+            
     async def process_message(self, message: str) -> str:
         """Process a user message and return the response."""
         try:
@@ -96,20 +103,30 @@ class Agent(BaseModel):
     async def search(self, query: str) -> List[Dict[str, Any]]:
         """Perform a web search using the SearchTool."""
         search_tool = next(tool for tool in self.tools if isinstance(tool, SearchTool))
-        result = await search_tool._arun(query)
-        self.memory.add_tool_memory("search", query, str(result))
+        result = await search_tool._arun(query, run_manager=self.callbacks[0])
         return result
 
     async def get_page_content(self, url: str) -> Dict[str, Any]:
         """Get web page content using the BrowserTool."""
         browser_tool = next(tool for tool in self.tools if isinstance(tool, BrowserTool))
-        result = await browser_tool._arun(url)
-        self.memory.add_tool_memory("browser", url, str(result))
+        result = await browser_tool._arun(url, run_manager=self.callbacks[0])
         return result
 
     async def make_http_request(self, url: str) -> str:
         """Make an HTTP request using the HttpTool."""
-        http_tool = next(tool for tool in self.tools if isinstance(tool, HttpTool))
-        result = await http_tool._arun(url)
-        self.memory.add_tool_memory("http", url, str(result))
-        return result 
+        try:
+            logger.info(f"Finding HttpTool for URL: {url}")
+            http_tool = next(tool for tool in self.tools if isinstance(tool, HttpTool))
+            logger.info("Found HttpTool")
+            
+            if not self.callbacks:
+                logger.warning("No callbacks available")
+            else:
+                logger.info("Using callback for tool execution")
+                
+            result = await http_tool._arun(url, run_manager=self.callbacks[0] if self.callbacks else None)
+            logger.info("Successfully executed HTTP request")
+            return result
+        except Exception as e:
+            logger.error(f"Error making HTTP request: {str(e)}")
+            return {"error": str(e)} 

@@ -22,24 +22,38 @@ class BrowserHandler(BaseHandler):
             url = command[len("browser "):].strip()
             
         if not url:
-            return self.get_help()
+            logger.warning("Empty URL provided")
+            return {"error": "URL is required"}
             
-        return await self.agent.get_page_content(url)
+        logger.info(f"Making browser request to URL: {url}")
+        result = await self.agent.get_page_content(url)
+        logger.info("Got response from agent")
+        return result
         
-    def format_result(self, result: str) -> str:
+    def format_result(self, result: Dict[str, Any]) -> str:
         """Format browser result for display."""
         if not result:
             return "No content retrieved"
             
-        if result.startswith("Error:"):
-            return result
+        if "error" in result:
+            return f"\nError: {result['error']}"
             
-        # Truncate long content
-        max_length = 500
-        if len(result) > max_length:
-            return result[:max_length] + "..."
+        if "content" not in result:
+            return f"\nError: Invalid response format"
             
-        return result
+        content = result["content"]
+        if not content:
+            return "No content retrieved"
+            
+        # Format the full string first
+        formatted = f"\nContent from {result.get('url', 'unknown URL')}:\n" + "-" * 50 + "\n" + content
+        
+        # Truncate the entire formatted string if too long
+        max_length = 1000
+        if len(formatted) > max_length:
+            formatted = formatted[:max_length] + "..."
+            
+        return formatted
         
     def get_help(self) -> str:
         """Get help text for browser commands."""

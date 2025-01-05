@@ -29,7 +29,7 @@ class TestHttpHandler:
         handler = HttpHandler(mock_agent)
         result = await handler.handle("http: example.com")
         assert result == mock_response
-        mock_agent.make_http_request.assert_called_once_with("example.com")
+        mock_agent.make_http_request.assert_called_once_with("https://example.com")
     
     def test_format_result(self, mock_agent):
         """Test result formatting."""

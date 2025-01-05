@@ -48,7 +48,12 @@ class CLI:
         # Find the appropriate handler
         for prefix, handler in self.handlers.items():
             if handler.can_handle(command):
-                return await handler.handle(command)
+                result = await handler.handle(command)
+                if hasattr(handler, 'format_result'):
+                    return handler.format_result(result)
+                elif hasattr(handler, 'format_results'):
+                    return handler.format_results(result)
+                return str(result)
                 
         # If no handler found, treat as a chat message
         return await self.agent.process_message(command)

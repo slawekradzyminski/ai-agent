@@ -33,18 +33,19 @@ class TestBrowserHandler:
     def test_format_result(self, mock_agent):
         """Test browser result formatting."""
         handler = BrowserHandler(mock_agent)
-        content = "A" * 1000  # Long content
         
-        # Test truncation of long content
-        formatted = handler.format_result(content)
-        assert len(formatted) < len(content)
+        # Test successful response
+        content = "A" * 1000  # Long content
+        result = {"url": "test.com", "content": content}
+        formatted = handler.format_result(result)
+        assert len(formatted) < len(content) + 100  # Account for URL and formatting
         assert formatted.endswith("...")
         
-        # Test error message
-        error_msg = "Error: Browser request failed"
-        formatted = handler.format_result(error_msg)
-        assert formatted == error_msg
+        # Test error response
+        error_result = {"error": "Browser request failed"}
+        formatted = handler.format_result(error_result)
+        assert "Error" in formatted
         
-        # Test empty content
-        formatted = handler.format_result("")
-        assert formatted == "No content retrieved" 
+        # Test empty response
+        formatted = handler.format_result({})
+        assert "No content retrieved" in formatted 
