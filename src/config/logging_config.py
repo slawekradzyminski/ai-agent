@@ -98,9 +98,11 @@ def setup_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
 
-    # Get current month and year for log file name
-    current_date = datetime.now()
-    log_file = f"logs/requests_{current_date.strftime('%Y%m')}.log"
+    # Get log file path from environment variable or use default
+    log_file = os.environ.get("LOG_FILE_PATH")
+    if not log_file:
+        current_date = datetime.now()
+        log_file = f"logs/requests_{current_date.strftime('%Y%m')}.log"
 
     # Create file logger for OpenAI requests
     file_logger = logging.getLogger('ai_agent.file')
