@@ -4,6 +4,7 @@ import logging
 import tempfile
 import os
 from src.config.logging_config import cleanup_logging, get_logger
+from src.config.formatters import OpenAIFormatter
 
 @pytest.fixture(autouse=True)
 def temp_log_file():
@@ -35,7 +36,6 @@ def cleanup_logs():
 @pytest.fixture(autouse=True)
 def caplog_with_formatter(caplog):
     """Configure caplog to use our custom formatter."""
-    from src.config.logging_config import OpenAIFormatter
     handler = caplog.handler
     handler.setFormatter(OpenAIFormatter('%(message)s'))
     return caplog 
