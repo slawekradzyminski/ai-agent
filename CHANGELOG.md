@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-01-08
+
+### Added
+- New `OpenAICallbackHandler` for comprehensive OpenAI request logging
+- Detailed logging of all OpenAI requests, responses, and errors
+- Integration with existing logging system using INFO level
+- Request-response correlation through unique IDs
+- Token usage tracking in logs
+- Proper message formatting with indentation and newline handling
+- Improved error handling with detailed error logs
+- Monthly log rotation with 10MB size limit
+
+### Changed
+- Updated agent to use both tool output and OpenAI logging callbacks
+- Enhanced logging format for better readability
+- Improved error handling with detailed error logs
+- Better handling of system and human messages in logs
+- More robust model name extraction from various sources
+
 ## [0.5.0] - 2025-01-07
 
 ### Added
