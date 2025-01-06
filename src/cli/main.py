@@ -2,19 +2,18 @@
 import os
 import sys
 import asyncio
-import logging
 from typing import Dict
 from dotenv import load_dotenv
 from src.agent.base import Agent
 from src.cli.handlers.base import BaseHandler
 from src.cli.handlers import SearchHandler, HttpHandler, BrowserHandler, MemoryHandler
+from src.config.logging_config import get_logger
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging using our custom configuration
+logger = get_logger()
 
 class CLI:
     """Command-line interface for the AI agent."""
@@ -61,8 +60,8 @@ class CLI:
 async def main():
     """Main entry point."""
     cli = CLI()
-    print("AI Agent CLI")
-    print('Type "help" for available commands or "exit" to quit\n')
+    logger.info("AI Agent CLI")
+    logger.info('Type "help" for available commands or "exit" to quit\n')
     
     while True:
         try:
@@ -71,14 +70,14 @@ async def main():
                 continue
                 
             result = await cli.process_command(command)
-            print("\nAgent:", result)
+            logger.info(f"\nAgent: {result}")
             
         except KeyboardInterrupt:
-            print("\nExiting...")
+            logger.info("\nExiting...")
             break
         except Exception as e:
             logger.error(f"Error: {str(e)}")
-            print(f"\nError: {str(e)}")
+            logger.info(f"\nError: {str(e)}")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

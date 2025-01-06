@@ -7,13 +7,35 @@ from langchain.agents import create_openai_functions_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.agents.agent import AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.callbacks import BaseCallbackHandler
 from src.tools.browser import BrowserTool
 from src.tools.search import SearchTool
 from src.tools.http import HttpTool
 from src.memory.vector_memory import VectorMemory
 from src.callbacks.tool_output import ToolOutputCallbackHandler
+from src.callbacks.openai_logger import OpenAICallbackHandler
+from src.config.logging_config import get_logger
+from src.config.prompts import SYSTEM_PROMPT
 
-logger = logging.getLogger(__name__)
+# Use console logger for user interaction
+logger = get_logger('console')
+
+class ToolUsageCallback(BaseCallbackHandler):
+    """Callback to show tool usage in console."""
+    
+    def __init__(self):
+        super().__init__()
+        self.logger = get_logger('console')
+    
+    async def on_tool_start(self, serialized: Dict[str, Any], input_str: str, **kwargs: Any) -> None:
+        """Show when a tool starts being used."""
+        tool_name = serialized.get("name", "unknown")
+        self.logger.info(f"\n> Using tool: {tool_name}")
+        self.logger.info(f"> Input: {input_str}\n")
+    
+    async def on_tool_end(self, output: str, **kwargs: Any) -> None:
+        """Show tool output."""
+        self.logger.info(f"> Tool output received\n")
 
 class Agent(BaseModel):
     """AI agent that can use tools to accomplish tasks."""
@@ -36,26 +58,29 @@ class Agent(BaseModel):
     def setup_agent(self):
         """Set up the agent with tools and LLM."""
         try:
+            # Create callback handlers
+            tool_callback = ToolOutputCallbackHandler(self.memory)
+            openai_callback = OpenAICallbackHandler()
+            usage_callback = ToolUsageCallback()
+            self.callbacks = [tool_callback, openai_callback, usage_callback]
+            
             self.llm = ChatOpenAI(
                 temperature=0,
                 model="gpt-4",
-                openai_api_key=self.openai_api_key
+                openai_api_key=self.openai_api_key,
+                callbacks=self.callbacks
             )
-            
-            # Create callback handler for tool output storage
-            callback_handler = ToolOutputCallbackHandler(self.memory)
-            self.callbacks = [callback_handler]
             
             # Initialize tools with properly formatted names and callbacks
             self.tools = [
-                SearchTool(name="search", callbacks=[callback_handler]),
-                BrowserTool(name="browser", callbacks=[callback_handler]),
-                HttpTool(name="http", callbacks=[callback_handler])
+                SearchTool(name="search", callbacks=self.callbacks),
+                BrowserTool(name="browser", callbacks=self.callbacks),
+                HttpTool(name="http", callbacks=self.callbacks)
             ]
             
             # Create the agent prompt
             prompt = ChatPromptTemplate.from_messages([
-                ("system", "You are a helpful AI assistant that can use tools to accomplish tasks. When using tools, always try to extract the most relevant information and present it clearly to the user. You have access to the conversation history and the history of tool outputs to help provide context-aware responses."),
+                ("system", SYSTEM_PROMPT),
                 MessagesPlaceholder(variable_name="chat_history"),
                 MessagesPlaceholder(variable_name="tool_history"),
                 ("human", "{input}"),
@@ -74,7 +99,7 @@ class Agent(BaseModel):
                 agent=agent,
                 tools=self.tools,
                 memory=self.memory,
-                verbose=True,
+                verbose=False,  # Set to False to reduce console output
                 handle_parsing_errors=True,
                 callbacks=self.callbacks
             )

@@ -1,8 +1,10 @@
 """Tests for the agent module."""
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
+from langchain_core.outputs import LLMResult, Generation
 from src.agent.base import Agent
 from src.callbacks.tool_output import ToolOutputCallbackHandler
+from src.callbacks.openai_logger import OpenAICallbackHandler
 
 @pytest.fixture
 def agent():
@@ -19,7 +21,10 @@ def agent():
         agent = Agent(openai_api_key="test-key")
         
         # Ensure callbacks are properly set
-        mock_executor.callbacks = [ToolOutputCallbackHandler(agent.memory)]
+        mock_executor.callbacks = [
+            ToolOutputCallbackHandler(agent.memory),
+            OpenAICallbackHandler()
+        ]
         
         return agent
 
@@ -61,8 +66,8 @@ async def test_autonomous_tool_output_storage(agent):
     
     async def mock_ainvoke(inputs):
         # Simulate tool usage via callback
-        callback = agent.agent_executor.callbacks[0]
-        await callback.on_tool_end(
+        tool_callback = agent.agent_executor.callbacks[0]
+        await tool_callback.on_tool_end(
             tool_output,
             tool_name=tool_name,
             tool_input=tool_input
@@ -82,4 +87,55 @@ async def test_autonomous_tool_output_storage(agent):
         output["input"] == tool_input and
         output["output"] == tool_output
         for output in tool_outputs
-    ) 
+    )
+
+@pytest.mark.asyncio
+async def test_openai_logging(agent, caplog):
+    """Test that OpenAI requests and responses are logged."""
+    caplog.set_level("INFO")
+    
+    # Mock OpenAI request/response
+    async def mock_ainvoke(inputs):
+        # Simulate OpenAI request/response via callback
+        openai_callback = agent.agent_executor.callbacks[1]
+        await openai_callback.on_llm_start(
+            {"name": "gpt-4"},
+            ["test prompt"],
+            invocation_params={"request_id": "test-123", "temperature": 0.7}
+        )
+        await openai_callback.on_llm_end(
+            LLMResult(
+                generations=[[Generation(
+                    text="test response",
+                    generation_info={"finish_reason": "stop"}
+                )]],
+                llm_output={
+                    "model_name": "gpt-4",
+                    "token_usage": {
+                        "total_tokens": 100,
+                        "completion_tokens": 50,
+                        "prompt_tokens": 50
+                    }
+                }
+            ),
+            request_id="test-123"
+        )
+        return {"output": "test response"}
+    
+    agent.agent_executor.ainvoke = AsyncMock(side_effect=mock_ainvoke)
+    
+    # Process message that should trigger OpenAI request
+    await agent.process_message("Test message")
+    
+    # Verify OpenAI request/response was logged
+    assert "OpenAI Request - ID: test-123" in caplog.text
+    assert "Model: gpt-4" in caplog.text
+    assert "Temperature: 0.7" in caplog.text
+    assert "test prompt" in caplog.text
+    assert "OpenAI Response - ID: test-123" in caplog.text
+    assert "test response" in caplog.text
+    assert "Tokens Used:" in caplog.text
+    assert "Total: 100" in caplog.text
+    assert "Completion: 50" in caplog.text
+    assert "Prompt: 50" in caplog.text
+    assert "Finish Reason: stop" in caplog.text 
