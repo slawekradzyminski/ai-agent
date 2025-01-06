@@ -137,5 +137,4 @@ def test_parse_html_content_fallback(browser_tool):
     """
     content = browser_tool._parse_html_content(html)
     assert "Important text" in content
-    # Menu items should be filtered out
     assert "Menu items" not in content 

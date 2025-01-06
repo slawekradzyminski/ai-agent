@@ -70,10 +70,10 @@ async def test_empty_memory_search(memory):
     
 @pytest.mark.asyncio
 async def test_filtered_search(memory):
+    """Test searching only tool outputs."""
     memory.add_tool_memory("search", "python", "Python info")
     memory.add_user_message("I love Python")
     
-    # Search only tool outputs
     tool_outputs = memory.get_relevant_tool_outputs("python")
     assert len(tool_outputs) == 1
     assert tool_outputs[0]["tool"] == "search"

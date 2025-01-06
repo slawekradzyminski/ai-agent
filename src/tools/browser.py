@@ -44,9 +44,8 @@ class BrowserTool(BaseTool):
 
         if not self.test_mode:
             try:
-                # Set up Chrome options
                 chrome_options = Options()
-                chrome_options.add_argument("--headless=new")  # Updated headless argument
+                chrome_options.add_argument("--headless=new")  
                 chrome_options.add_argument("--no-sandbox")
                 chrome_options.add_argument("--disable-dev-shm-usage")
                 chrome_options.add_argument("--disable-gpu")
@@ -54,13 +53,10 @@ class BrowserTool(BaseTool):
                 chrome_options.add_argument("--window-size=1920,1080")
                 chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                 
-                # Create a new Chrome driver
                 self.driver = webdriver.Chrome(options=chrome_options)
                 
-                # Load the page
                 self.driver.get(url)
                 
-                # Wait for page load
                 try:
                     WebDriverWait(self.driver, 10).until(
                         lambda d: d.execute_script("return document.readyState") == "complete"
@@ -69,7 +65,6 @@ class BrowserTool(BaseTool):
                     self.logger.warning("Page load timeout")
                     return {"error": "Page load timeout"}
                 
-                # Get the page content
                 content = self._parse_html_content(self.driver.page_source)
                 
                 return {"url": url, "content": content}
@@ -85,47 +80,38 @@ class BrowserTool(BaseTool):
                     except Exception as e:
                         self.logger.error(f"Error closing browser: {str(e)}")
         else:
-            # Test mode - return mock content
             return {"url": url, "content": self.driver.page_source if self.driver else ""}
 
     def _parse_html_content(self, html: str) -> str:
         """Parse HTML content and extract relevant text."""
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Remove script and style elements
         for script in soup(["script", "style", "nav", "menu", "footer", "header"]):
             script.decompose()
             
-        # Try to find main content
         content = ""
         
-        # First try article tag
         article = soup.find('article')
         if article:
             content = article.get_text()
         
-        # Then try main tag
         if not content:
             main = soup.find('main')
             if main:
                 content = main.get_text()
         
-        # Fallback to body content, but try to find the main content div
         if not content:
-            # Look for content divs
             content_divs = soup.find_all('div', class_=lambda x: x and ('content' in x.lower() or 'article' in x.lower()))
             if content_divs:
                 content = max(content_divs, key=lambda x: len(x.get_text())).get_text()
             else:
-                # Last resort: get all text but filter out common navigation elements
                 for element in soup.find_all(['div', 'section']):
                     if element.get('class'):
                         classes = ' '.join(element.get('class')).lower()
                         if any(x in classes for x in ['nav', 'menu', 'footer', 'header', 'sidebar']):
                             element.decompose()
                 content = soup.get_text()
-            
-        # Clean up whitespace
+
         lines = (line.strip() for line in content.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
         content = ' '.join(chunk for chunk in chunks if chunk)

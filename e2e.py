@@ -141,46 +141,12 @@ async def run_tests():
             # Test 7: Memory Clearing
             print("\n7. Testing Memory Clearing")
             print("------------------------")
-            # After processing a message, tool memories should be cleared
-            if len(cli.agent._recent_tool_memories) == 0:
-                print("✅ Memory clearing test successful")
-            else:
-                print("❌ Memory clearing test failed")
-                sys.exit(1)
+            await test_memory_clearing()
 
             # Test 8: Content Summarization
             print("\n8. Testing Content Summarization")
             print("-----------------------------")
-            # Fetch technical article
-            await browser_handler.handle("browser: https://www.awesome-testing.com/tips/deep-technical-understanding")
-            summary_response = await cli.agent.process_message(
-                "What does the author think about deep technical understanding? Summarize the key points."
-            )
-            
-            # Check for comprehensive coverage of key points with synonyms
-            key_concepts = {
-                "business understanding": ["business understanding", "business knowledge"],
-                "technical understanding": ["technical understanding", "technical knowledge", "technical aspects"],
-                "microservices": ["microservices", "micro-services"],
-                "asynchronous": ["asynchronous", "async"],
-                "system boundaries": ["system boundaries", "boundaries", "system integration"],
-                "integration": ["integration", "integrate", "integrating"],
-                "competitive advantage": ["competitive advantage", "competitiveness", "advantage over the competition", "market advantage", "competitive edge"],
-                "books": ["book", "books", "reading"]
-            }
-            
-            missing_concepts = []
-            for concept, synonyms in key_concepts.items():
-                if not any(syn.lower() in summary_response.lower() for syn in synonyms):
-                    missing_concepts.append(concept)
-            
-            if not missing_concepts:
-                print("✅ Content summarization test successful")
-            else:
-                print("❌ Content summarization test failed")
-                print("Missing concepts:", ", ".join(missing_concepts))
-                print(f"Response was: {summary_response}")
-                sys.exit(1)
+            await test_content_summarization()
 
             print("\n✅ All tests passed!")
             return 0
@@ -193,6 +159,45 @@ async def run_tests():
     finally:
         # Clean up logs after tests
         cleanup_logs()
+
+async def test_memory_clearing():
+    """Test that memory is properly cleared after processing messages."""
+    if len(cli.agent._recent_tool_memories) == 0:
+        print("✅ Memory clearing test successful")
+    else:
+        print("❌ Memory clearing test failed")
+        sys.exit(1)
+
+async def test_content_summarization():
+    """Test content summarization capabilities."""
+    await browser_handler.handle("browser: https://www.awesome-testing.com/tips/deep-technical-understanding")
+    summary_response = await cli.agent.process_message(
+        "What does the author think about deep technical understanding? Summarize the key points."
+    )
+    
+    key_concepts = {
+        "business understanding": ["business understanding", "business knowledge"],
+        "technical understanding": ["technical understanding", "technical knowledge", "technical aspects"],
+        "microservices": ["microservices", "micro-services"],
+        "asynchronous": ["asynchronous", "async"],
+        "system boundaries": ["system boundaries", "boundaries", "system integration"],
+        "integration": ["integration", "integrate", "integrating"],
+        "competitive advantage": ["competitive advantage", "competitiveness", "advantage over the competition", "market advantage", "competitive edge"],
+        "books": ["book", "books", "reading"]
+    }
+
+    missing_concepts = []
+    for concept, synonyms in key_concepts.items():
+        if not any(syn.lower() in summary_response.lower() for syn in synonyms):
+            missing_concepts.append(concept)
+    
+    if not missing_concepts:
+        print("✅ Content summarization test successful")
+    else:
+        print("❌ Content summarization test failed")
+        print("Missing concepts:", ", ".join(missing_concepts))
+        print(f"Response was: {summary_response}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     try:
