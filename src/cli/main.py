@@ -1,4 +1,3 @@
-"""Main CLI module."""
 import os
 import sys
 import asyncio
@@ -9,17 +8,11 @@ from src.cli.handlers.base import BaseHandler
 from src.cli.handlers import SearchHandler, HttpHandler, BrowserHandler, MemoryHandler
 from src.config.logging_config import get_logger
 
-# Load environment variables
 load_dotenv()
-
-# Configure logging using our custom configuration
 logger = get_logger()
 
 class CLI:
-    """Command-line interface for the AI agent."""
-    
     def __init__(self):
-        """Initialize the CLI."""
         self.agent = Agent(openai_api_key=os.getenv("OPENAI_API_KEY", ""))
         self.handlers: Dict[str, BaseHandler] = {
             "memory": MemoryHandler(self.agent),
@@ -29,7 +22,6 @@ class CLI:
         }
         
     def get_help(self) -> str:
-        """Get help text."""
         help_text = "Available commands:\n"
         help_text += "- help: Show this help message\n"
         help_text += "- exit: Exit the program\n"
@@ -38,13 +30,11 @@ class CLI:
         return help_text
         
     async def process_command(self, command: str) -> str:
-        """Process a command and return the result."""
         if command == "help":
             return self.get_help()
         elif command == "exit":
             sys.exit(0)
         
-        # Find the appropriate handler
         for prefix, handler in self.handlers.items():
             if handler.can_handle(command):
                 result = await handler.handle(command)
@@ -54,11 +44,9 @@ class CLI:
                     return handler.format_results(result)
                 return str(result)
                 
-        # If no handler found, treat as a chat message
         return await self.agent.process_message(command)
 
 async def main():
-    """Main entry point."""
     cli = CLI()
     logger.info("AI Agent CLI")
     logger.info('Type "help" for available commands or "exit" to quit\n')

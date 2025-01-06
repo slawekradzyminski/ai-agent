@@ -1,16 +1,11 @@
-"""Logging formatters for the application."""
 import logging
 from datetime import datetime
 
 class OpenAIFormatter(logging.Formatter):
-    """Custom formatter for OpenAI logs."""
-    
     def _format_message(self, msg):
-        """Format a single message with proper indentation and newline handling."""
         if isinstance(msg, dict):
             msg_type = msg.get('type', 'unknown')
             content = msg.get('content', '')
-            # Handle special message types
             if msg_type.lower() == 'system':
                 return f"System:\n{content}"
             elif msg_type.lower() == 'human':
@@ -22,11 +17,9 @@ class OpenAIFormatter(logging.Formatter):
     def format(self, record):
         if hasattr(record, 'openai_request'):
             data = record.openai_request
-            # Format messages with proper handling of newlines and indentation
             formatted_messages = []
             for msg in data.get('messages', []):
                 formatted_msg = self._format_message(msg)
-                # Indent any newlines in the message
                 formatted_msg = formatted_msg.replace('\n', '\n  ')
                 formatted_messages.append(formatted_msg)
                     
@@ -47,7 +40,6 @@ class OpenAIFormatter(logging.Formatter):
                         f"OpenAI Response - ID: {data.get('id', 'N/A')}\n" + \
                         f"Content: {data.get('content', '')}"
             
-            # Only show token info if any tokens were used
             if any(data.get(k, 0) > 0 for k in ['total_tokens', 'completion_tokens', 'prompt_tokens']):
                 record.msg += f"\nTokens Used:" + \
                             f"\n  Total: {data.get('total_tokens', 0):,d}" + \

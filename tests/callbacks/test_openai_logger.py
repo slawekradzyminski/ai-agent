@@ -1,20 +1,15 @@
-"""Tests for OpenAI logger callback handler."""
 import pytest
 import logging
-from datetime import datetime
 from langchain_core.outputs import LLMResult, Generation
 from langchain_core.messages import HumanMessage, SystemMessage
 from src.callbacks.openai_logger import OpenAICallbackHandler
-from src.config.logging_config import get_logger
 
 @pytest.fixture
 def callback_handler():
-    """Create a callback handler instance for testing."""
     return OpenAICallbackHandler()
 
 @pytest.mark.asyncio
 async def test_on_llm_start(callback_handler, caplog):
-    """Test request logging on LLM start."""
     caplog.set_level(logging.INFO)
     
     await callback_handler.on_llm_start(
@@ -29,7 +24,6 @@ async def test_on_llm_start(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_start_with_string_messages(callback_handler, caplog):
-    """Test request logging with string messages."""
     caplog.set_level(logging.INFO)
     
     await callback_handler.on_llm_start(
@@ -45,7 +39,6 @@ async def test_on_llm_start_with_string_messages(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_start_empty_messages(callback_handler, caplog):
-    """Test request logging with empty messages."""
     caplog.set_level(logging.INFO)
     
     await callback_handler.on_llm_start(
@@ -59,10 +52,8 @@ async def test_on_llm_start_empty_messages(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_end(callback_handler, caplog):
-    """Test response logging on LLM end."""
     caplog.set_level(logging.INFO)
     
-    # Create a mock LLMResult
     generation = Generation(
         text="test response",
         generation_info={"finish_reason": "stop"}
@@ -91,7 +82,6 @@ async def test_on_llm_end(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_end_with_empty_response(callback_handler, caplog):
-    """Test response logging with empty response."""
     caplog.set_level(logging.INFO)
     
     await callback_handler.on_llm_end(None)
@@ -99,7 +89,6 @@ async def test_on_llm_end_with_empty_response(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_end_with_no_generations(callback_handler, caplog):
-    """Test response logging with no generations."""
     caplog.set_level(logging.INFO)
     
     response = LLMResult(generations=[], llm_output={})
@@ -108,10 +97,8 @@ async def test_on_llm_end_with_no_generations(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_end_with_missing_data(callback_handler, caplog):
-    """Test response logging with missing data."""
     caplog.set_level(logging.INFO)
     
-    # Create a minimal LLMResult with no generation_info
     generation = Generation(text="test response")
     response = LLMResult(generations=[[generation]])
     
@@ -123,10 +110,8 @@ async def test_on_llm_end_with_missing_data(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_end_with_error(callback_handler, caplog):
-    """Test response logging with formatting error."""
     caplog.set_level(logging.INFO)
     
-    # Create a malformed response that will cause an error
     class BadResponse:
         @property
         def generations(self):
@@ -137,7 +122,6 @@ async def test_on_llm_end_with_error(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_on_llm_error(callback_handler, caplog):
-    """Test error logging on LLM error."""
     caplog.set_level(logging.ERROR)
     
     test_error = ValueError("Test error message")
@@ -152,14 +136,12 @@ async def test_on_llm_error(callback_handler, caplog):
 
 @pytest.mark.asyncio
 async def test_missing_values_handled(callback_handler, caplog):
-    """Test handling of missing values in responses."""
     caplog.set_level(logging.INFO)
     
-    # Test with minimal data
     await callback_handler.on_llm_start(
         {"name": None},
         [SystemMessage(content="")],
         invocation_params={}
     )
     
-    assert "Model: N/A" in caplog.text  # Should use default N/A for missing values 
+    assert "Model: N/A" in caplog.text 

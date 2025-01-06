@@ -1,7 +1,6 @@
-"""Search tool for performing web searches."""
 import logging
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import Field
 from duckduckgo_search import DDGS
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun, BaseCallbackHandler
@@ -9,8 +8,6 @@ from langchain_core.callbacks import CallbackManagerForToolRun, BaseCallbackHand
 logger = logging.getLogger(__name__)
 
 class SearchTool(BaseTool):
-    """Tool for performing web searches using DuckDuckGo."""
-    
     name: str = Field(default="search", description="The name of the tool")
     description: str = Field(default="Search the web for information about a topic", description="The description of the tool")
     ddgs: Optional[DDGS] = Field(default_factory=DDGS)
@@ -18,12 +15,10 @@ class SearchTool(BaseTool):
     callbacks: Optional[List[BaseCallbackHandler]] = Field(default=None, description="Callbacks for the tool")
 
     def __init__(self, **kwargs):
-        """Initialize the search tool."""
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
 
     def search_web(self, query: str) -> List[Dict[str, Any]]:
-        """Search the web using DuckDuckGo."""
         try:
             results = list(self.ddgs.text(query, max_results=5))
             if not results:
@@ -45,7 +40,6 @@ class SearchTool(BaseTool):
             results = self.search_web(query)
             if run_manager:
                 try:
-                    # Convert results to a string representation for the callback
                     output = "\n".join(f"{r['title']}: {r['body']}" for r in results)
                     await run_manager.on_tool_end(
                         output=output,

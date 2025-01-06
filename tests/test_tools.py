@@ -1,4 +1,3 @@
-"""Tests for the tools module."""
 import pytest
 from unittest.mock import patch, Mock
 from src.tools.search import SearchTool
@@ -7,23 +6,18 @@ from src.tools.browser import BrowserTool
 
 @pytest.fixture
 def search_tool():
-    """Create a search tool instance for testing."""
     return SearchTool()
 
 @pytest.fixture
 def http_tool():
-    """Create an HTTP tool instance for testing."""
     return HttpTool()
 
 @pytest.fixture
 def browser_tool():
-    """Create a browser tool instance for testing."""
     return BrowserTool()
 
 def test_search_web(search_tool):
-    """Test web search functionality."""
     with patch.object(search_tool.ddgs, 'text') as mock_search:
-        # Mock search results
         mock_results = [
             {
                 "title": "Test Result",
@@ -39,9 +33,7 @@ def test_search_web(search_tool):
         assert results[0]["title"] == "Test Result"
 
 def test_search_web_empty_results(search_tool):
-    """Test web search with no results."""
     with patch.object(search_tool.ddgs, 'text') as mock_search:
-        # Mock empty search results
         mock_search.return_value = []
 
         results = search_tool.search_web("nonexistent query")
@@ -49,9 +41,7 @@ def test_search_web_empty_results(search_tool):
         assert len(results) == 0
 
 def test_search_web_error_handling(search_tool):
-    """Test web search error handling."""
     with patch.object(search_tool.ddgs, 'text') as mock_search:
-        # Mock search error
         mock_search.side_effect = Exception("Search failed")
 
         results = search_tool.search_web("error query")

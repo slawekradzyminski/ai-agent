@@ -21,30 +21,25 @@ def setup_logging():
     if _file_logger is not None and _console_logger is not None:
         return _file_logger, _console_logger
         
-    # Create logs directory if it doesn't exist
     if not os.path.exists('logs'):
         os.makedirs('logs')
 
-    # Get log file path from environment variable or use default
     log_file = os.environ.get("LOG_FILE_PATH")
     if not log_file:
         current_date = datetime.now()
         log_file = f"logs/requests_{current_date.strftime('%Y%m')}.log"
 
-    # Create file logger for OpenAI requests
     file_logger = logging.getLogger('ai_agent.file')
     file_logger.setLevel(logging.INFO)
     cleanup_logging(file_logger)
     
-    # Create console logger for user interaction
     console_logger = logging.getLogger('ai_agent.console')
     console_logger.setLevel(logging.INFO)
     cleanup_logging(console_logger)
 
-    # File handler for OpenAI logs
     file_handler = RotatingFileHandler(
         log_file,
-        maxBytes=10*1024*1024,  # 10MB
+        maxBytes=10*1024*1024, # 10MB
         backupCount=5,
         encoding='utf-8'
     )
@@ -53,7 +48,6 @@ def setup_logging():
     file_handler.setFormatter(file_formatter)
     file_logger.addHandler(file_handler)
     
-    # Console handler for user interaction
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter('%(message)s')

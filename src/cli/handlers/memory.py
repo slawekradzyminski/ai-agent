@@ -1,15 +1,10 @@
-"""Memory inspection command handler."""
 from src.cli.handlers.base import BaseHandler
 
 class MemoryHandler(BaseHandler):
-    """Handler for memory inspection commands."""
-    
     def can_handle(self, command: str) -> bool:
-        """Check if this handler can process the given command."""
         return command.startswith("memory")
     
     async def handle(self, command: str) -> str:
-        """Handle memory inspection commands."""
         if command == "memory documents":
             return "Stored documents:\n" + "\n".join(self.agent.memory._documents)
         elif command == "memory metadata":
@@ -26,7 +21,6 @@ class MemoryHandler(BaseHandler):
             return self.get_help()
     
     def get_help(self) -> str:
-        """Get help text for memory commands."""
         return """Memory inspection commands:
 - memory documents: Show all stored documents
 - memory metadata: Show metadata for all documents

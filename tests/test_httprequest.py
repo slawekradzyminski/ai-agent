@@ -1,4 +1,3 @@
-"""Tests for the HTTP tool."""
 import pytest
 import aiohttp
 from aioresponses import aioresponses
@@ -6,12 +5,10 @@ from src.tools.http import HttpTool
 
 @pytest.fixture
 def http_tool():
-    """Create an HTTP tool instance for testing."""
     return HttpTool()
 
 @pytest.mark.asyncio
 async def test_request_json_response(http_tool):
-    """Test successful HTTP request with JSON response."""
     test_url = "https://test.example.com"
     test_response = {"status": "ok", "data": "test"}
     
@@ -22,7 +19,6 @@ async def test_request_json_response(http_tool):
 
 @pytest.mark.asyncio
 async def test_request_html_response(http_tool):
-    """Test successful HTTP request with HTML response."""
     test_url = "https://test.example.com"
     test_html = "<html><body>Test content</body></html>"
     
@@ -33,7 +29,6 @@ async def test_request_html_response(http_tool):
 
 @pytest.mark.asyncio
 async def test_request_text_response(http_tool):
-    """Test successful HTTP request with plain text response."""
     test_url = "https://test.example.com"
     test_text = "Plain text content"
     
@@ -44,7 +39,6 @@ async def test_request_text_response(http_tool):
 
 @pytest.mark.asyncio
 async def test_request_error(http_tool):
-    """Test handling of request errors."""
     test_url = "https://error.example.com"
     
     with aioresponses() as m:

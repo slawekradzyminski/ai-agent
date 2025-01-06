@@ -1,4 +1,3 @@
-"""Base agent module."""
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from langchain_openai import ChatOpenAI
@@ -94,7 +93,6 @@ class Agent(BaseModel):
             return f"An error occurred: {str(e)}"
 
     async def search(self, query: str) -> List[Dict[str, Any]]:
-        """Perform a web search using the SearchTool."""
         try:
             search_tool = next(tool for tool in self.tools if isinstance(tool, SearchTool))
             result = await search_tool._arun(query, run_manager=self.callbacks[0])
@@ -104,7 +102,6 @@ class Agent(BaseModel):
             return {"error": str(e)}
 
     async def get_page_content(self, url: str) -> Dict[str, Any]:
-        """Get web page content using the BrowserTool."""
         try:
             browser_tool = next(tool for tool in self.tools if isinstance(tool, BrowserTool))
             result = await browser_tool._arun(url, run_manager=self.callbacks[0])
@@ -114,7 +111,6 @@ class Agent(BaseModel):
             return {"error": str(e)}
 
     async def make_http_request(self, url: str) -> Dict[str, Any]:
-        """Make an HTTP request using the HttpTool."""
         try:
             http_tool = next(tool for tool in self.tools if isinstance(tool, HttpTool))
             result = await http_tool._arun(url, run_manager=self.callbacks[0])

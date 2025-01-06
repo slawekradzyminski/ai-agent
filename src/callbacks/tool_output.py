@@ -1,13 +1,9 @@
-"""Tool output callback handler."""
 from langchain_core.callbacks import BaseCallbackHandler
-from typing import Dict, Any
+from typing import Any
 from src.memory.vector_memory import VectorMemory
 
 class ToolOutputCallbackHandler(BaseCallbackHandler):
-    """Callback handler to store tool outputs in memory."""
-    
     def __init__(self, memory: VectorMemory):
-        """Initialize with memory instance."""
         super().__init__()
         self.memory = memory
     

@@ -1,7 +1,6 @@
-"""Browser tool for web scraping."""
 import logging
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,8 +13,6 @@ from langchain_core.callbacks import CallbackManagerForToolRun, BaseCallbackHand
 logger = logging.getLogger(__name__)
 
 class BrowserTool(BaseTool):
-    """Tool for browsing web pages using Selenium."""
-    
     name: str = Field(default="browser", description="The name of the tool")
     description: str = Field(default="Browse a webpage and extract its content", description="The description of the tool")
     driver: Optional[webdriver.Chrome] = None
@@ -24,17 +21,14 @@ class BrowserTool(BaseTool):
     callbacks: Optional[List[BaseCallbackHandler]] = Field(default=None, description="Callbacks for the tool")
 
     def __init__(self, **kwargs):
-        """Initialize the browser tool."""
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing BrowserTool")
 
     def set_mock_driver(self, mock_driver):
-        """Set a mock driver for testing."""
         self.driver = mock_driver
 
     def get_page_content(self, url: str) -> Dict[str, Any]:
-        """Get the content of a webpage."""
         if not url:
             self.logger.error("URL is empty")
             return {"error": "URL cannot be empty"}
@@ -83,7 +77,6 @@ class BrowserTool(BaseTool):
             return {"url": url, "content": self.driver.page_source if self.driver else ""}
 
     def _parse_html_content(self, html: str) -> str:
-        """Parse HTML content and extract relevant text."""
         soup = BeautifulSoup(html, 'html.parser')
         
         for script in soup(["script", "style", "nav", "menu", "footer", "header"]):
@@ -124,12 +117,10 @@ class BrowserTool(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
-        """Run the browser tool asynchronously."""
         try:
             result = self.get_page_content(url)
             if run_manager:
                 try:
-                    # Convert result to a string representation for the callback
                     output = result.get("content", "") if "content" in result else str(result.get("error", ""))
                     await run_manager.on_tool_end(
                         output=output,
@@ -138,12 +129,10 @@ class BrowserTool(BaseTool):
                     )
                 except Exception as e:
                     self.logger.error(f"Error in callback: {str(e)}")
-                    # Continue even if callback fails
             return result
         except Exception as e:
             self.logger.error(f"Error in _arun: {str(e)}")
             return {"error": str(e)}
 
     def _run(self, url: str) -> Dict[str, Any]:
-        """Run the browser tool synchronously."""
         raise NotImplementedError("Use _arun instead") 

@@ -1,4 +1,3 @@
-"""Shared test fixtures."""
 import pytest
 import logging
 import tempfile
@@ -8,7 +7,6 @@ from src.config.formatters import OpenAIFormatter
 
 @pytest.fixture(autouse=True)
 def temp_log_file():
-    """Create a temporary log file for tests."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_log_file = os.path.join(temp_dir, "test.log")
         original_log_file = os.environ.get("LOG_FILE_PATH")
@@ -21,7 +19,6 @@ def temp_log_file():
 
 @pytest.fixture(autouse=True)
 def cleanup_logs():
-    """Clean up logging handlers after each test."""
     global _file_logger, _console_logger
     from src.config.logging_config import _file_logger, _console_logger
     _file_logger = None
@@ -35,7 +32,6 @@ def cleanup_logs():
 
 @pytest.fixture(autouse=True)
 def caplog_with_formatter(caplog):
-    """Configure caplog to use our custom formatter."""
     handler = caplog.handler
     handler.setFormatter(OpenAIFormatter('%(message)s'))
     return caplog 

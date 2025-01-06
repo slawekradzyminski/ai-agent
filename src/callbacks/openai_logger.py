@@ -1,15 +1,11 @@
-"""OpenAI callback handler for logging requests and responses."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from datetime import datetime
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
 from src.config.logging_config import get_logger
 
 class OpenAICallbackHandler(BaseCallbackHandler):
-    """Callback handler for logging OpenAI requests and responses."""
-    
     def __init__(self):
-        """Initialize the callback handler."""
         super().__init__()
         self.logger = get_logger('file')
     
@@ -19,21 +15,18 @@ class OpenAICallbackHandler(BaseCallbackHandler):
         messages: List[Any],
         **kwargs: Any,
     ) -> None:
-        """Log when an LLM starts processing."""
         invocation_params = kwargs.get('invocation_params', {})
         metadata = kwargs.get('metadata', {})
         
-        # Extract model info from multiple possible locations
         model_name = (
             metadata.get('ls_model_name') or
             invocation_params.get('model_name') or
             invocation_params.get('model') or
-            serialized.get('name') or  # Direct name in serialized
+            serialized.get('name') or
             (serialized.get('kwargs', {}).get('model_name')) or
             'N/A'
         )
         
-        # Collect message data
         message_data = []
         for msg in messages:
             if isinstance(msg, BaseMessage):
@@ -64,23 +57,19 @@ class OpenAICallbackHandler(BaseCallbackHandler):
         })
     
     async def on_llm_end(self, response: Any, **kwargs: Any) -> None:
-        """Log when an LLM ends processing."""
         try:
             generation = response.generations[0][0] if response and response.generations else None
             
-            # Extract response metadata
             response_metadata = {}
             if hasattr(generation, 'message'):
                 response_metadata = getattr(generation.message, 'response_metadata', {})
             elif hasattr(generation, 'generation_info'):
                 response_metadata = generation.generation_info or {}
             
-            # Get token usage if available
             token_usage = {}
             if hasattr(response, 'llm_output') and response.llm_output:
                 token_usage = response.llm_output.get('token_usage', {})
             
-            # Get content from generation
             content = ''
             if generation:
                 if hasattr(generation, 'text'):
@@ -113,7 +102,6 @@ class OpenAICallbackHandler(BaseCallbackHandler):
             })
     
     async def on_llm_error(self, error: Exception, **kwargs: Any) -> None:
-        """Log when an LLM errors."""
         self.logger.error('', extra={
             'openai_error': {
                 'id': kwargs.get('request_id', 'N/A'),
